@@ -10,6 +10,6 @@
 #ifndef INC_K_TASK_H_
 #define INC_K_TASK_H_
 
-
+#define TEST
 
 #endif /* INC_K_TASK_H_ */
