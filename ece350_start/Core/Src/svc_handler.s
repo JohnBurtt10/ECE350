@@ -4,7 +4,7 @@
 .thumb
 
 .global SVC_Handler //indicates to the linker that this function exists
-.thumb_func //ensures that the address of the interrupt function is properly aligned
+.thumb_func
 SVC_Handler:
 	.global SVC_Handler_Main
 	TST lr, #4

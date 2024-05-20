@@ -8,10 +8,6 @@
 #include "common.h"
 #include <stdio.h>
 
-// Definitions for various system calls
-#define TEST_ERROR 0
-#define CREATE_THREAD 1
-
 uint32_t* current_MSP = NULL;
 
 uint32_t* Get_MSP_INIT_VAL(){
@@ -21,5 +17,7 @@ uint32_t* Get_MSP_INIT_VAL(){
 void Trigger_System_Call(unsigned int systemCall) {;
 	if (systemCall == TEST_ERROR){
 		__asm("SVC 0");
+	} else if (systemCall == CREATE_THREAD) {
+		__asm("SVC 1");
 	}
 }

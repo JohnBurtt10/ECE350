@@ -28,9 +28,7 @@
   */
 int main(void)
 {
-
   /* MCU Configuration: Don't change this or the whole chip won't work!*/
-
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
   /* Configure the system clock */
@@ -51,6 +49,7 @@ int main(void)
 
   //Testing svc_hjanlder call
   Trigger_System_Call(0);
+  Create_Thread_Stack();
   while (1)
   {
     /* USER CODE END WHILE */

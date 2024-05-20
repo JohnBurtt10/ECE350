@@ -22,6 +22,8 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "common.h"
+#include "thread.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -166,15 +168,14 @@ void DebugMon_Handler(void)
 /**
   * @brief This function handles Pendable request for system service.
   */
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
-}
+//void PendSV_Handler(void)
+//{
+//  /* USER CODE BEGIN PendSV_IRQn 0 */
+//  /* USER CODE END PendSV_IRQn 0 */
+//  /* USER CODE BEGIN PendSV_IRQn 1 */
+//
+//  /* USER CODE END PendSV_IRQn 1 */
+//}
 
 /**
   * @brief This function handles System tick timer.
@@ -214,8 +215,19 @@ void SVC_Handler_Main( unsigned int *svc_args )
   printf("System call number: %d\r\n", svc_number );
   switch( svc_number )
   {
-    case 0:  /* EnablePrivilegedMode */
+    case TEST_ERROR:  /* EnablePrivilegedMode */
       break;
+    case CREATE_THREAD:
+    	/*
+    	 *  Using location of the top of thread's stack (i.e. last value of stackptr)
+    	 *  pop 8 values from the stack into registers R4-R11.
+    	 */
+    	__set_PSP((uint32_t) p_threadStacks[0]); //Setting the PSP register
+
+    	// https://developer.arm.com/documentation/dui0552/a/cortex-m3-peripherals/system-control-block/interrupt-control-and-state-register
+    	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+    	__asm("isb");
+    	break;
     default:    /* unknown SVC */
       break;
   }
