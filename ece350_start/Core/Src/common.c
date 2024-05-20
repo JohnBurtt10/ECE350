@@ -6,15 +6,19 @@
  */
 
 #include "common.h"
+#include <stdio.h>
 
 // Definitions for various system calls
 #define TEST_ERROR 0
+#define CREATE_THREAD 1
+
+uint32_t* current_MSP = NULL;
 
 uint32_t* Get_MSP_INIT_VAL(){
 	return *(uint32_t**)0x0;
 }
 
-void Trigger_System_Call(unsigned int systemCall) {
+void Trigger_System_Call(unsigned int systemCall) {;
 	if (systemCall == TEST_ERROR){
 		__asm("SVC 0");
 	}
