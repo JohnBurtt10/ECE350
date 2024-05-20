@@ -141,16 +141,15 @@ void UsageFault_Handler(void)
 /**
   * @brief This function handles System service call via SWI instruction.
   */
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVCall_IRQn 0 */
-
-  /* USER CODE END SVCall_IRQn 0 */
-  /* USER CODE BEGIN SVCall_IRQn 1 */
-
-  /* USER CODE END SVCall_IRQn 1 */
-}
-
+//void SVC_Handler(void)
+//{
+//  /* USER CODE BEGIN SVCall_IRQn 0 */
+//
+//  /* USER CODE END SVCall_IRQn 0 */
+//  /* USER CODE BEGIN SVCall_IRQn 1 */
+//
+//  /* USER CODE END SVCall_IRQn 1 */
+//}
 /**
   * @brief This function handles Debug monitor.
   */
@@ -199,5 +198,26 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
+/**
+  * @brief Handles the actual system call by first retrieving the system call number and then doing whatever we want with it.
+  */
+void SVC_Handler_Main( unsigned int *svc_args )
+{
+  unsigned int svc_number;
 
+  /*
+  * Stack contains:
+  * r0, r1, r2, r3, r12, r14, the return address and xPSR
+  * First argument (r0) is svc_args[0]
+  */
+  svc_number = ( ( char * )svc_args[ 6 ] )[ -2 ] ;
+  printf("System call number: %d\r\n", svc_number );
+  switch( svc_number )
+  {
+    case 0:  /* EnablePrivilegedMode */
+      break;
+    default:    /* unknown SVC */
+      break;
+  }
+}
 /* USER CODE END 1 */
