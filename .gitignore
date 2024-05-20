@@ -1,0 +1,9 @@
+# STM32 Debug Directory
+ece350_start/Debug/
+
+# Metadata Directory
+.metadata/
+ece350_start/.metadata/
+
+# Settings Directory
+ece350_start/.settings/
