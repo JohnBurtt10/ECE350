@@ -13,9 +13,6 @@
 
 #include <stdint.h>
 
-// ------------ GLOBALS ------------
-extern uint32_t* current_MSP; // Stores current MSP pointer as stack grows.
-
 // ----------- SVC CALLS -----------
 #define TEST_ERROR 0
 #define CREATE_THREAD 1
@@ -26,6 +23,13 @@ extern uint32_t* current_MSP; // Stores current MSP pointer as stack grows.
 // ------ SUBJECT TO CHANGE ----------
 #define MAIN_STACK_SIZE 0x400 // 1024 bytes. This stores interrupts, setup, and os-specific stuff
 #define THREAD_STACK_SIZE 0x400 // 1024 bytes. Defined in prelab 1
+
+#define TID_NULL 0 //predefined Task ID for the NULL task
+#define MAX_TASKS (MAX_STACK_SIZE - MAIN_STACK_SIZE)/THREAD_STACK_SIZE //maximum number of tasks in the system
+#define DORMANT 0 //state of terminated task
+#define READY 1 //state of task that can be scheduled but is not running
+#define RUNNING 2 //state of running task
+
 
 uint32_t* Get_MSP_INIT_VAL();
 
