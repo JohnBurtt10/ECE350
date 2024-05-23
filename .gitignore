@@ -7,3 +7,7 @@ ece350_start/.metadata/
 
 # Settings Directory
 ece350_start/.settings/
+
+*/.DS_STORE
+
+ece350_start/ece350_start.launch

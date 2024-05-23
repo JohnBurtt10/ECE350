@@ -19,7 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "common.h"
-#include "thread.h"
+#include "k_task.h"
+#include "k_mem.h"
 #include <stdio.h> //You are permitted to use this library, but currently only printf is implemented. Anything else is up to you!
 
 /**
@@ -41,6 +42,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  osKernelInit();
+
   // Main stack pointer
   // 0x0 pointer is a pointer that points to a pointer storing vector table.
   // Must dereference once to get the address of the start of the MSP stack.
@@ -49,7 +52,7 @@ int main(void)
 
   //Testing svc_hjanlder call
   Trigger_System_Call(0);
-  Create_Thread_Stack();
+  Create_Thread();
   while (1)
   {
     /* USER CODE END WHILE */

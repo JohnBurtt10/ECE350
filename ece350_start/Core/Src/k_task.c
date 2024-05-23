@@ -1,32 +1,30 @@
 /*
- * thread.c
+ * k_task.c
  *
- *  Created on: May 19, 2024
+ *  Created on: May 21, 2024
  *      Author: Ethan Romero
  */
-#include "thread.h"
+#include "k_task.h"
 #include "common.h"
 #include "main.h"
 #include <stdio.h>
 
-unsigned int numThreads = 0;
-uint32_t* p_threadStacks[(MAX_STACK_SIZE-MAIN_STACK_SIZE)/THREAD_STACK_SIZE];
+//unsigned int numThreads = 0;
+//uint32_t* p_threadStacks[(MAX_STACK_SIZE-MAIN_STACK_SIZE)/THREAD_STACK_SIZE];
 
-uint32_t* Create_Thread_Stack() {
+uint32_t* Create_Thread() {
 	// Offset from main stack (portion of stack containing interrupts, setups, etc)
-	numThreads += 1;
-	uint32_t* p_threadStack = Get_Thread_Stack(numThreads);
+	numCreatedTasks += 1;
+	uint32_t* p_threadStack = Get_Thread_Stack(numCreatedTasks);
 
 	// Once we have the new pointer for the thread stack, we can now setup its stack and context
-	// This function will make the stack pointer, point to bottom of stack
-	printf("p_threadStack start: %p\r\n", p_threadStack);
+	// This function will make the stack pointer, point to bottom of stack (technically top since its the last value pushed to it)
 	Init_Thread_Stack(&p_threadStack, &print_continuously);
-	printf("p_threadStack end: %p\r\n", p_threadStack);
-	p_threadStacks[numThreads - 1] = p_threadStack;
+	p_threadStacks[numCreatedTasks - 1] = p_threadStack;
 
 	Trigger_System_Call(CREATE_THREAD);
 
-	return 0x0;
+	return p_threadStack;
 }
 
 void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)()){
@@ -44,9 +42,12 @@ uint32_t* Get_Thread_Stack(unsigned int threadNum){
 }
 
 void print_continuously(void){
-	int i = 0;
-	while(i++ < 15){
+	while(1){
 		printf("Thread2222\r\n");
 	}
+}
+
+void Kill_Thread() {
 	SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; // Kills thread
+	return;
 }
