@@ -10,8 +10,8 @@
 #ifndef INC_K_MEM_H_
 #define INC_K_MEM_H_
 
-extern uint32_t currentMainStackSize;
 extern TCB tcbs[MAX_TASKS];
+extern TCB* readyTCBs[MAX_TASKS];
 
 /*
  * @brief  initializes all global kernel-level data structures and other variables as required by our kernel
@@ -21,10 +21,10 @@ extern TCB tcbs[MAX_TASKS];
 void osKernelInit(void);
 
 /*
- * @brief: Write to main stack.
- * @param uint32_t for size of data, uint32_t* for data.
- * @retval 1 on success, -1 else.
+ * @brief: Init TCB array that stores all stored TCBs.
+ * @param None.
+ * @retval None.
  */
-unsigned int osInitTCBArray();
+void osInitTCBArray();
 
 #endif /* INC_K_MEM_H_ */

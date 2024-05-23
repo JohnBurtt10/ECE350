@@ -14,13 +14,13 @@
 
 uint32_t* Create_Thread() {
 	// Offset from main stack (portion of stack containing interrupts, setups, etc)
-	numThreads += 1;
-	uint32_t* p_threadStack = Get_Thread_Stack(numThreads);
+	numCreatedTasks += 1;
+	uint32_t* p_threadStack = Get_Thread_Stack(numCreatedTasks);
 
 	// Once we have the new pointer for the thread stack, we can now setup its stack and context
 	// This function will make the stack pointer, point to bottom of stack (technically top since its the last value pushed to it)
 	Init_Thread_Stack(&p_threadStack, &print_continuously);
-	p_threadStacks[numThreads - 1] = p_threadStack;
+	p_threadStacks[numCreatedTasks - 1] = p_threadStack;
 
 	Trigger_System_Call(CREATE_THREAD);
 

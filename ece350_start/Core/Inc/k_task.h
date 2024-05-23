@@ -26,13 +26,13 @@ typedef struct task_control_block{
 	task_t tid; //task ID
 	U8 state; //task's state
 	U16 stack_size; //stack size. Must be a multiple of 8
+	U32 current_sp;
 } TCB;
 // ------------------
 
 // ------ GLobals ------
-extern unsigned int numThreads;
+extern unsigned int numCreatedTasks;
 extern uint32_t* p_threadStacks[]; // Array to store pointers to the top of each thread stack. (aka last value pushed to stack)
-extern TCB* p_ArrayOfTCB[];
 // ------ Globals -------
 
 

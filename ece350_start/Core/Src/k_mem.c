@@ -12,10 +12,11 @@
 #include <stddef.h>
 
 // ------- Globals --------
-unsigned int numThreads;
+unsigned int numCreatedTasks;
 uint32_t* p_threadStacks[MAX_TASKS];
-uint32_t currentMainStackSize;
 TCB tcbs[MAX_TASKS];
+TCB* readyTCBs[MAX_TASKS];
+
 /*
  * Questions to ask ourselves during design:
  * 1) How we are going to store the TCB's?: Since our memory is so limited, we can utilize an array. It would basically result in instant lookup.
@@ -25,25 +26,22 @@ TCB tcbs[MAX_TASKS];
  */
 
 void osKernelInit(void) {
-	numThreads = 0;
-	currentMainStackSize = 0;
-//	uint32_t offsetTCBArray = (Get_MSP_INIT_VAL() )
-//	osWriteToMainStack((), data)
+	numCreatedTasks = 0;
+	osInitTCBArray();
 	return;
 }
 
-unsigned int osInitTCBArray() {
+void osInitTCBArray() {
 	for (int i = 0; i < MAX_TASKS; i++) {
 		tcbs[i].ptask = NULL;
-		tcbs[i].stack_high = 0x0;
+		tcbs[i].stack_high = Get_Thread_Stack(i);
 		tcbs[i].tid = i;
 		tcbs[i].state = DORMANT;
 		tcbs[i].stack_size = THREAD_STACK_SIZE;
+		tcbs[i].current_sp = tcbs[i].stack_high;
 	}
 
-	uint32_t* msp_initial = Get_MSP_INIT_VAL();
-//	uint32_t* new_sp = (uint32_t*)( (uint32_t)msp_initial - sizeOfData );
-	return 1;
+	return;
 }
 
 
