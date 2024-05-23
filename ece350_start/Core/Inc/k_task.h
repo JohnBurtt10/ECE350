@@ -11,5 +11,4 @@
 #define INC_K_TASK_H_
 
 
-
 #endif /* INC_K_TASK_H_ */

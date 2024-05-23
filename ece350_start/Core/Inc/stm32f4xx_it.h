@@ -56,7 +56,7 @@ void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 /* USER CODE BEGIN EFP */
-
+void SVC_Handler_Main( unsigned int *svc_args );
 /* USER CODE END EFP */
 
 #ifdef __cplusplus
