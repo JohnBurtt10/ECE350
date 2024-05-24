@@ -12,24 +12,6 @@
 
 #include <stdint.h>
 
-// ---- Types -------
-typedef unsigned int U32;
-typedef unsigned short U16;
-typedef char U8;
-typedef unsigned int task_t;
-// -----------------
-
-// ----- Structs -----
-typedef struct task_control_block{
-	void (*ptask)(void* args); //entry address
-	U32 stack_high; //starting address of stack (high address)
-	task_t tid; //task ID
-	U8 state; //task's state
-	U16 stack_size; //stack size. Must be a multiple of 8
-	U32 current_sp;
-} TCB;
-// ------------------
-
 // ------ GLobals ------
 extern unsigned int numCreatedTasks;
 extern uint32_t* p_threadStacks[]; // Array to store pointers to the top of each thread stack. (aka last value pushed to stack)

@@ -10,6 +10,8 @@
 #ifndef INC_K_MEM_H_
 #define INC_K_MEM_H_
 
+#include "k_task.h"
+
 extern TCB tcbs[MAX_TASKS];
 extern TCB* readyTCBs[MAX_TASKS];
 
