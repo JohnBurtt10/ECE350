@@ -11,11 +11,11 @@
 #define INC_K_TASK_H_
 
 #include <stdint.h>
+#include "common.h"
 
-// ------ GLobals ------
-extern unsigned int numCreatedTasks;
+// ------ Globals ------
 extern uint32_t* p_threadStacks[]; // Array to store pointers to the top of each thread stack. (aka last value pushed to stack)
-// ------ Globals -------
+// ------ End of Globals -------
 
 
 /*
@@ -43,6 +43,13 @@ uint32_t* Get_Thread_Stack(unsigned int threadNum);
  * brief: Kills a running thread by clearing the PendSV interrupt
  */
 void Kill_Thread();
+
+/*
+ * @brief: Create a new task and register it with the RTX if possible
+ * @param: TCB of task to create.
+ * @retval: RTX_OK on success, RTX_ERR on failure
+ */
+int osCreateTask(TCB* task);
 
 
 #endif /* INC_K_TASK_H_ */

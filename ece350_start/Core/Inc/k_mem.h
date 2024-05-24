@@ -12,8 +12,7 @@
 
 #include "k_task.h"
 
-extern TCB tcbs[MAX_TASKS];
-extern TCB* readyTCBs[MAX_TASKS];
+//extern TCB* readyTCBs[MAX_TASKS];
 
 /*
  * @brief  initializes all global kernel-level data structures and other variables as required by our kernel

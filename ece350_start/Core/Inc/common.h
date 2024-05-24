@@ -22,10 +22,13 @@
 
 // ------ SUBJECT TO CHANGE ----------
 #define MAIN_STACK_SIZE 0x400 // 1024 bytes. This stores interrupts, setup, and os-specific stuff
-#define THREAD_STACK_SIZE 0x400 // 1024 bytes. Defined in prelab 1
+#define MIN_THREAD_STACK_SIZE 0x200 // 1024 bytes. Defined in prelab 1
 
 #define TID_NULL 0 //predefined Task ID for the NULL task
 #define MAX_TASKS 16 //maximum number of tasks in the system
+
+#define RTX_OK 1
+#define RTX_ERR 0
 
 // ---- Types -------
 typedef unsigned int U32;
@@ -49,6 +52,13 @@ typedef struct task_control_block{
 	U32 current_sp;
 } TCB;
 
+typedef struct kernel_variables {
+	unsigned int numCreatedTasks;
+	TCB tcbList[MAX_TASKS];
+	int currentRunningTID;
+} Kernel_Variables;
+
+extern Kernel_Variables kernelVariables;
 
 uint32_t* Get_MSP_INIT_VAL();
 
