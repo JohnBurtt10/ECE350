@@ -25,13 +25,29 @@
 #define THREAD_STACK_SIZE 0x400 // 1024 bytes. Defined in prelab 1
 
 #define TID_NULL 0 //predefined Task ID for the NULL task
-#define MAX_TASKS (MAX_STACK_SIZE - MAIN_STACK_SIZE)/THREAD_STACK_SIZE //maximum number of tasks in the system
+#define MAX_TASKS 16 //maximum number of tasks in the system
 
+// ---- Types -------
+typedef unsigned int U32;
+typedef unsigned short U16;
+typedef char U8;
+typedef unsigned int task_t;
+
+// Task stuff
 enum Thread_States {
 	DORMANT = 0, //state of terminated task
 	READY = 1, //state of task that can be scheduled but is not running
 	RUNNING = 2, //state of running task
 };
+
+typedef struct task_control_block{
+	void (*ptask)(void* args); //entry address
+	U32 stack_high; //starting address of stack (high address)
+	task_t tid; //task ID
+	U8 state; //task's state
+	U16 stack_size; //stack size. Must be a multiple of 8
+	U32 current_sp;
+} TCB;
 
 
 uint32_t* Get_MSP_INIT_VAL();

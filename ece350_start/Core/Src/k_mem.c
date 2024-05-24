@@ -8,6 +8,7 @@
 #include "common.h"
 #include "k_task.h"
 #include "k_mem.h"
+#include "circular_queue.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -15,7 +16,6 @@
 unsigned int numCreatedTasks;
 uint32_t* p_threadStacks[MAX_TASKS];
 TCB tcbs[MAX_TASKS];
-TCB* readyTCBs[MAX_TASKS];
 
 /*
  * Questions to ask ourselves during design:
@@ -28,13 +28,14 @@ TCB* readyTCBs[MAX_TASKS];
 void osKernelInit(void) {
 	numCreatedTasks = 0;
 	osInitTCBArray();
+	Queue_Init(tcbs);
 	return;
 }
 
 void osInitTCBArray() {
 	for (int i = 0; i < MAX_TASKS; i++) {
 		tcbs[i].ptask = NULL;
-		tcbs[i].stack_high = Get_Thread_Stack(i);
+		tcbs[i].stack_high = (U32)Get_Thread_Stack(i);
 		tcbs[i].tid = i;
 		tcbs[i].state = DORMANT;
 		tcbs[i].stack_size = THREAD_STACK_SIZE;
