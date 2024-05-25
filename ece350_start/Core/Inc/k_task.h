@@ -34,10 +34,12 @@ void print_continuously(void);
 void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)());
 
 /*
- * brief: Given some nth thread, we use this function to determine its starting stack address. Assumes all thread stacks are of same size.
+ * @brief: Find space to create a new thread stack
+ * @retval: returns stack_high address of new stack on success. NULL on failure due to not enough memory
+ * @param: Size of stack to allocate
  */
-uint32_t* Get_Thread_Stack(unsigned int threadNum);
-
+uint32_t* Get_Thread_Stack(unsigned int stack_size);
+uint32_t* Get_Thread_Stack_OLD(unsigned int threadNum);
 
 /*
  * brief: Kills a running thread by clearing the PendSV interrupt
@@ -50,6 +52,14 @@ void Kill_Thread();
  * @retval: RTX_OK on success, RTX_ERR on failure
  */
 int osCreateTask(TCB* task);
+
+/*
+ * @brief: Retrieve the informaƟon from the TCB of the task with id TID, and fill the TCB pointed to by task_copy
+ *   		with all of its fields, if a task with the given TID exists
+ * @param: TID and pointer to a task to update.
+ * @retval: RTX_ERR on failure, RTX_OK on success
+ */
+int osTaskInfo(task_t TID, TCB* task_copy);
 
 
 #endif /* INC_K_TASK_H_ */

@@ -13,6 +13,14 @@
 
 #include <stdint.h>
 
+#define DEBUG_ENABLE // Comment me out to disable debugging
+
+#ifdef DEBUG_ENABLE
+	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
+#else
+	 #define DEBUG_PRINTF(fmt, ...)
+#endif
+
 // ----------- SVC CALLS -----------
 #define TEST_ERROR 0
 #define CREATE_THREAD 1
@@ -35,13 +43,14 @@ typedef unsigned int U32;
 typedef unsigned short U16;
 typedef char U8;
 typedef unsigned int task_t;
+// ---- End Of Types ------
 
-// Task stuff
-enum Thread_States {
-	DORMANT = 0, //state of terminated task
-	READY = 1, //state of task that can be scheduled but is not running
-	RUNNING = 2, //state of running task
-};
+// ---- Thread States -----
+#define DORMANT 0 //state of terminated task
+#define READY  1 //state of task that can be scheduled but is not running
+#define RUNNING 2 //state of running task
+#define CREATED 3
+// ----- End Of Thread States --------
 
 typedef struct task_control_block{
 	void (*ptask)(void* args); //entry address
@@ -49,11 +58,13 @@ typedef struct task_control_block{
 	task_t tid; //task ID
 	U8 state; //task's state
 	U16 stack_size; //stack size. Must be a multiple of 8
-	U32 current_sp;
+	U32 current_sp; // top of stack
+	void* args; // Arguments for function
 } TCB;
 
 typedef struct kernel_variables {
-	unsigned int numCreatedTasks;
+	unsigned int numCreatedTasks; // Num of running and ready TCBs
+	unsigned int totalStackUsed;
 	TCB tcbList[MAX_TASKS];
 	int currentRunningTID;
 } Kernel_Variables;
@@ -66,5 +77,8 @@ uint32_t* Get_MSP_INIT_VAL();
 uint32_t* Get_Process_Stack_PTR();
 
 void Trigger_System_Call(unsigned int systemCall);
+
+// Checks how much of the whole stack is currently used
+unsigned int Get_Total_Memory_Used();
 
 #endif /* INC_COMMON_H_ */

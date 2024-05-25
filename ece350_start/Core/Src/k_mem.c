@@ -22,6 +22,7 @@ Kernel_Variables kernelVariables;
 void osKernelInit(void) {
 	kernelVariables.numCreatedTasks = 0;
 	kernelVariables.currentRunningTID = -1;
+	kernelVariables.totalStackUsed = MAIN_STACK_SIZE;
 	osInitTCBArray();
 	return;
 }
@@ -31,8 +32,8 @@ void osInitTCBArray() {
 		kernelVariables.tcbList[i].ptask = NULL;
 		kernelVariables.tcbList[i].stack_high = 0x0;
 		kernelVariables.tcbList[i].tid = i;
-		kernelVariables.tcbList[i].state = DORMANT;
-		kernelVariables.tcbList[i].stack_size = MIN_THREAD_STACK_SIZE;
+		kernelVariables.tcbList[i].state = CREATED;
+		kernelVariables.tcbList[i].stack_size = 0;
 		kernelVariables.tcbList[i].current_sp = 0x0;
 	}
 	return;

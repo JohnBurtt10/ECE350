@@ -28,6 +28,7 @@
   * @brief  The application entry point.
   * @retval int
   */
+#ifndef DEBUG_ENABLE
 int main(void)
 {
   /* MCU Configuration: Don't change this or the whole chip won't work!*/
@@ -61,8 +62,4 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
-
-void Test_Queue(){
-
-}
-
+#endif

@@ -21,3 +21,12 @@ void Trigger_System_Call(unsigned int systemCall) {;
 		__asm("SVC 1");
 	}
 }
+
+unsigned int Get_Total_Memory_Used() {
+	unsigned int totalMem = MAIN_STACK_SIZE;
+	for (int i = 0; i < MAX_TASKS; i++){
+		totalMem += kernelVariables.tcbList[i].stack_size;
+	}
+
+	return totalMem;
+}
