@@ -110,11 +110,11 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
  * Returns 0 if the Kernel has not started
 */
 task_t getTID (void) {
-	// If the kernel has not started, no TID is running
+	// If the kernel has not started, no task is running
 	if(kernelVariables.currentRunningTID == -1){
 		return 0;
 	}
-	
+
 	return kernelVariables.currentRunningTID;
 }
 
