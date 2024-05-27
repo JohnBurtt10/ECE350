@@ -78,7 +78,7 @@ void Test_Generate_Thread_Stack(){
 }
 
 void Init_Task(TCB* task){
-	task->ptask = NULL;
+	task->ptask = 0x1234;
 	task->stack_high = 0x0;
 	task->state = DORMANT;
 	task->stack_size = 0x200;

@@ -33,7 +33,8 @@
 #define MIN_THREAD_STACK_SIZE 0x200 // 1024 bytes. Defined in prelab 1
 
 #define TID_NULL 0 //predefined Task ID for the NULL task
-#define MAX_TASKS 16 //maximum number of tasks in the system
+#define MAX_TASKS 16 //maximum number of tasks in the system including null task
+#define MAX_USER_TASKS MAX_TASKS - 1 // Maximum number of user tasks.
 
 #define RTX_OK 1
 #define RTX_ERR 0
@@ -59,11 +60,12 @@ typedef struct task_control_block{
 	U8 state; //task's state
 	U16 stack_size; //stack size. Must be a multiple of 8
 	U32 current_sp; // top of stack
+	U32 original_stack_size; // Size of stack when TCB was initialized/created
 	void* args; // Arguments for function
 } TCB;
 
 typedef struct kernel_variables {
-	unsigned int numCreatedTasks; // Num of running and ready TCBs
+	unsigned int numAvaliableTasks; // Num of running and ready TCBs
 	unsigned int totalStackUsed;
 	TCB tcbList[MAX_TASKS];
 	int currentRunningTID;

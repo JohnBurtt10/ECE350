@@ -18,7 +18,12 @@
 int osCreateTask(TCB* task) {
 	TCB* tcbs = kernelVariables.tcbList;
 
-	if (kernelVariables.numCreatedTasks == MAX_TASKS || kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
+	if (task->stack_size < MIN_THREAD_STACK_SIZE || task->ptask == NULL){
+		DEBUG_PRINTF("Failed to create task. Stack size too small or missing ptr to function\r\n");
+		return RTX_ERR;
+	}
+
+	if (kernelVariables.numAvaliableTasks == MAX_TASKS || kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
 		DEBUG_PRINTF("Failed to create task. Not enough memory or reached maximum allowed tasks\r\n");
 		return RTX_ERR;
 	}
@@ -34,10 +39,12 @@ int osCreateTask(TCB* task) {
 			tcbs[i].state = READY;
 			tcbs[i].stack_size = task->stack_size;
 			tcbs[i].current_sp = tcbs[i].stack_high;
+			tcbs[i].original_stack_size = task->stack_size;
 			tcbs[i].args = task->args;
 
 			task->tid = i;
 			kernelVariables.totalStackUsed += task->stack_size;
+			kernelVariables.numAvaliableTasks++;
 
 			DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", i);
 			return RTX_OK;
@@ -45,9 +52,9 @@ int osCreateTask(TCB* task) {
 
 		// Found terminated task. Check if we can fit the new TCB into it.
 		if (tcbs[i].state == DORMANT) {
-			if (tcbs[i].stack_size >= task->stack_size){
-				if (tcbs[i].stack_size < TCBStackSmallest){
-					TCBStackSmallest = tcbs[i].stack_size;
+			if (tcbs[i].original_stack_size >= task->stack_size){
+				if (tcbs[i].original_stack_size < TCBStackSmallest){
+					TCBStackSmallest = tcbs[i].original_stack_size;
 					TIDtoOverwrite = i;
 				}
 			}
@@ -60,7 +67,9 @@ int osCreateTask(TCB* task) {
 		tcbs[TIDtoOverwrite].ptask = task->ptask;
 		tcbs[TIDtoOverwrite].state = READY;
 		tcbs[TIDtoOverwrite].current_sp = tcbs[TIDtoOverwrite].stack_high;
+		tcbs[TIDtoOverwrite].stack_size = task->stack_size;
 		tcbs[TIDtoOverwrite].args = task->args;
+		kernelVariables.numAvaliableTasks++;
 		return RTX_OK;
 	}
 
@@ -93,13 +102,13 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
 
 uint32_t* Create_Thread() {
 	// Offset from main stack (portion of stack containing interrupts, setups, etc)
-	kernelVariables.numCreatedTasks += 1;
-	uint32_t* p_threadStack = Get_Thread_Stack_OLD(kernelVariables.numCreatedTasks);
+	kernelVariables.numAvaliableTasks += 1;
+	uint32_t* p_threadStack = Get_Thread_Stack_OLD(kernelVariables.numAvaliableTasks);
 
 	// Once we have the new pointer for the thread stack, we can now setup its stack and context
 	// This function will make the stack pointer, point to bottom of stack (technically top since its the last value pushed to it)
 	Init_Thread_Stack(&p_threadStack, &print_continuously);
-	p_threadStacks[kernelVariables.numCreatedTasks - 1] = p_threadStack;
+	p_threadStacks[kernelVariables.numAvaliableTasks - 1] = p_threadStack;
 
 	Trigger_System_Call(CREATE_THREAD);
 
