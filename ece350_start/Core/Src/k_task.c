@@ -83,14 +83,19 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
 		return RTX_ERR;
 	}
 
-	if (TID >= 0 && TID <= MAX_TASKS){
+	if (TID >= 0 && TID < MAX_TASKS){
 		TCB task = kernelVariables.tcbList[TID];
+
+		// Check that task exists and resources have already been allocated (not in CREATED state)
+		if(task.state == DORMANT || task.state == READY || task.state == RUNNING){
+			return RTX_ERR;
+		}
 
 		task_copy->args = task.args;
 		task_copy->current_sp = task.current_sp;
 		task_copy->ptask = task.ptask;
 		task_copy->stack_high = task.stack_high;
-		task_copy->stack_size = task.stack_size;
+		task_copy->stack_size = task.original_stack_size;
 		task_copy->state = task.state;
 		task_copy->tid = task.tid;
 
