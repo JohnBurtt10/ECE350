@@ -11,29 +11,11 @@
 #define INC_K_TASK_H_
 
 #include <stdint.h>
+#include "common.h"
 
-// ---- Types -------
-typedef unsigned int U32;
-typedef unsigned short U16;
-typedef char U8;
-typedef unsigned int task_t;
-// -----------------
-
-// ----- Structs -----
-typedef struct task_control_block{
-	void (*ptask)(void* args); //entry address
-	U32 stack_high; //starting address of stack (high address)
-	task_t tid; //task ID
-	U8 state; //task's state
-	U16 stack_size; //stack size. Must be a multiple of 8
-	U32 current_sp;
-} TCB;
-// ------------------
-
-// ------ GLobals ------
-extern unsigned int numCreatedTasks;
+// ------ Globals ------
 extern uint32_t* p_threadStacks[]; // Array to store pointers to the top of each thread stack. (aka last value pushed to stack)
-// ------ Globals -------
+// ------ End of Globals -------
 
 
 /*
@@ -52,15 +34,32 @@ void print_continuously(void);
 void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)());
 
 /*
- * brief: Given some nth thread, we use this function to determine its starting stack address. Assumes all thread stacks are of same size.
+ * @brief: Find space to create a new thread stack
+ * @retval: returns stack_high address of new stack on success. NULL on failure due to not enough memory
+ * @param: Size of stack to allocate
  */
-uint32_t* Get_Thread_Stack(unsigned int threadNum);
-
+uint32_t* Get_Thread_Stack(unsigned int stack_size);
+uint32_t* Get_Thread_Stack_OLD(unsigned int threadNum);
 
 /*
  * brief: Kills a running thread by clearing the PendSV interrupt
  */
 void Kill_Thread();
+
+/*
+ * @brief: Create a new task and register it with the RTX if possible
+ * @param: TCB of task to create.
+ * @retval: RTX_OK on success, RTX_ERR on failure
+ */
+int osCreateTask(TCB* task);
+
+/*
+ * @brief: Retrieve the informaƟon from the TCB of the task with id TID, and fill the TCB pointed to by task_copy
+ *   		with all of its fields, if a task with the given TID exists
+ * @param: TID and pointer to a task to update.
+ * @retval: RTX_ERR on failure, RTX_OK on success
+ */
+int osTaskInfo(task_t TID, TCB* task_copy);
 
 
 #endif /* INC_K_TASK_H_ */

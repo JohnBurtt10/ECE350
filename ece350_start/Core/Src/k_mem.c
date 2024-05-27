@@ -12,35 +12,42 @@
 #include <stddef.h>
 
 // ------- Globals --------
-unsigned int numCreatedTasks;
 uint32_t* p_threadStacks[MAX_TASKS];
-TCB tcbs[MAX_TASKS];
-TCB* readyTCBs[MAX_TASKS];
 
-/*
- * Questions to ask ourselves during design:
- * 1) How we are going to store the TCB's?: Since our memory is so limited, we can utilize an array. It would basically result in instant lookup.
- * 2) How will the Kernel know which thread/task is currently executing?: Based on the thread's/task's state.
- * 3) How does the scheduler know which threads/tasks are available for scheduling?: Based on the thread's/task's state.
- * 4) What data does the kernel need to store and access in order to load/unload tasks?: We can utilize the main stack to store the TCB's.
- */
+Kernel_Variables kernelVariables;
+
+// Instead of using a circular queue, we will utilize the currentRunningTID by incrementing it by one each time we want to switch to another tcb.
+// This will behave closely like a queue, but will remove any complex data structures
 
 void osKernelInit(void) {
-	numCreatedTasks = 0;
+	kernelVariables.numAvaliableTasks = 0;
+	kernelVariables.currentRunningTID = -1;
+	kernelVariables.totalStackUsed = MAIN_STACK_SIZE;
 	osInitTCBArray();
 	return;
 }
 
 void osInitTCBArray() {
-	for (int i = 0; i < MAX_TASKS; i++) {
-		tcbs[i].ptask = NULL;
-		tcbs[i].stack_high = Get_Thread_Stack(i);
-		tcbs[i].tid = i;
-		tcbs[i].state = DORMANT;
-		tcbs[i].stack_size = THREAD_STACK_SIZE;
-		tcbs[i].current_sp = tcbs[i].stack_high;
-	}
+	// Initializing null task
+	kernelVariables.tcbList[0].ptask = (U32)print_continuously;
+	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
+	kernelVariables.tcbList[0].tid = TID_NULL;
+	kernelVariables.tcbList[0].state = READY;
+	kernelVariables.tcbList[0].stack_size = 0x400;
+	kernelVariables.tcbList[0].current_sp = kernelVariables.tcbList[0].stack_high;
+	kernelVariables.tcbList[0].original_stack_size = 0x400;
+	kernelVariables.tcbList[0].args = NULL;
 
+	for (int i = 1; i < MAX_TASKS; i++) {
+		kernelVariables.tcbList[i].ptask = NULL;
+		kernelVariables.tcbList[i].stack_high = 0x0;
+		kernelVariables.tcbList[i].tid = i;
+		kernelVariables.tcbList[i].state = CREATED;
+		kernelVariables.tcbList[i].stack_size = 0;
+		kernelVariables.tcbList[i].current_sp = 0x0;
+		kernelVariables.tcbList[i].original_stack_size = 0;
+		kernelVariables.tcbList[i].args = NULL;
+	}
 	return;
 }
 
