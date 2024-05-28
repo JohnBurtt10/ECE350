@@ -44,7 +44,7 @@ uint32_t* Get_Thread_Stack_OLD(unsigned int threadNum);
 /*
  * brief: Kills a running thread by clearing the PendSV interrupt
  */
-void Kill_Thread();
+void Kill_Thread(void);
 
 /*
  * @brief: Create a new task and register it with the RTX if possible
@@ -60,6 +60,15 @@ int osCreateTask(TCB* task);
  * @retval: RTX_ERR on failure, RTX_OK on success
  */
 int osTaskInfo(task_t TID, TCB* task_copy);
+
+/*
+ * @brief:  immediately halts the execution of one task, saves it contexts, runs the scheduler, and loads the context of the next task to run.
+ * 1) When Yielding from current running task, push task registers to thread stack
+ * 2) iterate through scheduler to determine next task to run.
+ * 3) Pop registers from new task and update registers on microcontroller.
+ * 4)
+ */
+void osYield(void);
 
 
 #endif /* INC_K_TASK_H_ */

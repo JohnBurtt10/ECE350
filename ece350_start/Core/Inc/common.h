@@ -23,7 +23,8 @@
 
 // ----------- SVC CALLS -----------
 #define TEST_ERROR 0
-#define CREATE_THREAD 1
+#define CREATE_TASK 1
+#define YIELD 2
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
@@ -35,6 +36,7 @@
 #define TID_NULL 0 //predefined Task ID for the NULL task
 #define MAX_TASKS 16 //maximum number of tasks in the system including null task
 #define MAX_USER_TASKS MAX_TASKS - 1 // Maximum number of user tasks.
+#define NULL_TASK_STACK_SIZE 0x400
 
 #define RTX_OK 1
 #define RTX_ERR 0

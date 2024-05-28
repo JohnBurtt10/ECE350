@@ -218,7 +218,7 @@ void SVC_Handler_Main( unsigned int *svc_args )
   {
     case TEST_ERROR:  /* EnablePrivilegedMode */
       break;
-    case CREATE_THREAD:
+    case CREATE_TASK:
     	/*
     	 *  Using location of the top of thread's stack (i.e. last value of stackptr)
     	 *  pop 8 values from the stack into registers R4-R11.
@@ -228,6 +228,34 @@ void SVC_Handler_Main( unsigned int *svc_args )
     	// https://developer.arm.com/documentation/dui0552/a/cortex-m3-peripherals/system-control-block/interrupt-control-and-state-register
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
+    	break;
+    case YIELD:
+    	// Push current task registers to its thread stack
+    	__set_PSP((U32)kernelVariables.tcbList[TIDtaskToRun].stack_high);
+
+    	// Iterate through TCB's, determine next run to run.
+    	int TIDtaskToRun = -1;
+    	for (int i = 0; i < kernelVariables.currentRunningTID; i++) {
+    		if (kernelVariables.tcbList[i].state == READY) {
+    			TIDtaskToRun = i;
+    			break;
+    		}
+    	}
+
+    	for (int i = kernelVariables.currentRunningTID; i < MAX_TASKS; i++) {
+    		if (kernelVariables.tcbList[i].state == READY) {
+    			TIDtaskToRun = i;
+    			break;
+    		}
+    	}
+
+    	// TODO: null task case
+
+    	__set_PSP((U32)kernelVariables.tcbList[TIDtaskToRun].current_sp);
+
+
+
+    	kernelVariables.currentRunningTID = TIDtaskToRun;
     	break;
     default:    /* unknown SVC */
       break;

@@ -29,27 +29,9 @@ int osCreateTask(TCB* task) {
 	}
 
 	int TIDtoOverwrite = -1;
+	int TIDofEmptyTCB = 2147483647;
 	int TCBStackSmallest = 2147483647;
-	for (int i = 0; i < MAX_TASKS; i++) {
-		// Found uninitialized TCB
-		if (tcbs[i].state == CREATED){
-			tcbs[i].ptask = task->ptask;
-			tcbs[i].stack_high = (U32)Get_Thread_Stack(task->stack_size);
-			tcbs[i].tid = i;
-			tcbs[i].state = READY;
-			tcbs[i].stack_size = task->stack_size;
-			tcbs[i].current_sp = tcbs[i].stack_high;
-			tcbs[i].original_stack_size = task->stack_size;
-			tcbs[i].args = task->args;
-
-			task->tid = i;
-			kernelVariables.totalStackUsed += task->stack_size;
-			kernelVariables.numAvaliableTasks++;
-
-			DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", i);
-			return RTX_OK;
-		}
-
+	for (int i = 1; i < MAX_TASKS; i++) {
 		// Found terminated task. Check if we can fit the new TCB into it.
 		if (tcbs[i].state == DORMANT) {
 			if (tcbs[i].original_stack_size >= task->stack_size){
@@ -57,6 +39,14 @@ int osCreateTask(TCB* task) {
 					TCBStackSmallest = tcbs[i].original_stack_size;
 					TIDtoOverwrite = i;
 				}
+			}
+		}
+
+		// Found uninitialized TCB
+		int currentTID = i;
+		if (tcbs[i].state == CREATED){
+			if (currentTID <= TIDofEmptyTCB) {
+				TIDofEmptyTCB = i;
 			}
 		}
 	}
@@ -70,6 +60,24 @@ int osCreateTask(TCB* task) {
 		tcbs[TIDtoOverwrite].stack_size = task->stack_size;
 		tcbs[TIDtoOverwrite].args = task->args;
 		kernelVariables.numAvaliableTasks++;
+		return RTX_OK;
+	}
+
+	if (TIDofEmptyTCB != 2147483647) {
+		tcbs[TIDofEmptyTCB].ptask = task->ptask;
+		tcbs[TIDofEmptyTCB].stack_high = (U32)Get_Thread_Stack(task->stack_size);
+		tcbs[TIDofEmptyTCB].tid = TIDofEmptyTCB;
+		tcbs[TIDofEmptyTCB].state = READY;
+		tcbs[TIDofEmptyTCB].stack_size = task->stack_size;
+		tcbs[TIDofEmptyTCB].current_sp = tcbs[TIDofEmptyTCB].stack_high;
+		tcbs[TIDofEmptyTCB].original_stack_size = task->stack_size;
+		tcbs[TIDofEmptyTCB].args = task->args;
+
+		task->tid = TIDofEmptyTCB;
+		kernelVariables.totalStackUsed += task->stack_size;
+		kernelVariables.numAvaliableTasks++;
+
+		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
 		return RTX_OK;
 	}
 
@@ -90,7 +98,7 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
 		task_copy->current_sp = task.current_sp;
 		task_copy->ptask = task.ptask;
 		task_copy->stack_high = task.stack_high;
-		task_copy->stack_size = task.stack_size;
+		task_copy->stack_size = task.original_stack_size;
 		task_copy->state = task.state;
 		task_copy->tid = task.tid;
 
@@ -144,7 +152,7 @@ uint32_t* Get_Thread_Stack(unsigned int stack_size){
 
 	uint32_t newStackStart = (unsigned int)Get_MSP_INIT_VAL() - MAIN_STACK_SIZE; // Starting position
 	for (int i = 0; i < MAX_TASKS; i++) {
-		newStackStart -= kernelVariables.tcbList[i].stack_size;
+		newStackStart -= kernelVariables.tcbList[i].original_stack_size;
 	}
 
 	DEBUG_PRINTF("Found starting address for thread stack: %p. Size: %d\r\n", (uint32_t*)newStackStart, stack_size);
