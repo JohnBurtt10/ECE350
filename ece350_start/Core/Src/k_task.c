@@ -23,7 +23,7 @@ int osCreateTask(TCB* task) {
 		return RTX_ERR;
 	}
 
-	if (kernelVariables.numAvaliableTasks == MAX_TASKS || kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
+	if (kernelVariables.numAvaliableTasks == MAX_USER_TASKS || kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
 		DEBUG_PRINTF("Failed to create task. Not enough memory or reached maximum allowed tasks\r\n");
 		return RTX_ERR;
 	}
