@@ -32,9 +32,9 @@ unsigned int Get_Total_Memory_Used() {
 }
 
 int Scheduler(void) {
-	int TIDTaskToRun = -1;
+	int TIDTaskToRun = 0;
 
-	for (int i = 0; i < kernelVariables.currentRunningTID; i++) {
+	for (int i = 1; i < kernelVariables.currentRunningTID; i++) {
 		if (kernelVariables.tcbList[i].state == READY) {
 			TIDtaskToRun = i;
 			break;
