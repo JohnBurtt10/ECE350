@@ -83,4 +83,8 @@ void Trigger_System_Call(unsigned int systemCall);
 // Checks how much of the whole stack is currently used
 unsigned int Get_Total_Memory_Used();
 
+// Finds the next TCB to run and returns the TID
+int Scheduler(void);
+
+
 #endif /* INC_COMMON_H_ */

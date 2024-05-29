@@ -30,3 +30,23 @@ unsigned int Get_Total_Memory_Used() {
 
 	return totalMem;
 }
+
+int Scheduler(void) {
+	int TIDTaskToRun = -1;
+
+	for (int i = 0; i < kernelVariables.currentRunningTID; i++) {
+		if (kernelVariables.tcbList[i].state == READY) {
+			TIDtaskToRun = i;
+			break;
+		}
+	}
+
+	for (int i = kernelVariables.currentRunningTID; i < MAX_TASKS; i++) {
+		if (kernelVariables.tcbList[i].state == READY) {
+			TIDtaskToRun = i;
+			break;
+		}
+	}
+
+	return TIDTaskToRun;
+}
