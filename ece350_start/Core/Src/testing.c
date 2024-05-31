@@ -54,7 +54,7 @@ int main(void)
 	TCB test;
 	Init_Task(&test);
 	int result = osCreateTask(&test);
-	printf("osCreateTask: %d or %d\r\n", result);
+	printf("osCreateTask: %d\r\n", result);
 
 
 	while (1)
