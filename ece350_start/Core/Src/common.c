@@ -17,7 +17,7 @@ uint32_t* Get_MSP_INIT_VAL(){
 void Trigger_System_Call(unsigned int systemCall) {;
 	if (systemCall == TEST_ERROR){
 		__asm("SVC 0");
-	} else if (systemCall == CREATE_THREAD) {
+	} else if (systemCall == CREATE_TASK) {
 		__asm("SVC 1");
 	}
 }

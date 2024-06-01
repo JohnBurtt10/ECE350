@@ -15,75 +15,12 @@
  * 			i) Before writing to it, make sure there exists enough memory to allocate to it!
  * 		b) If there does not, check if one is DORMANT, and use its stack IF AND ONLY IF, the task->stack_size < dormant task size
  */
+
 int osCreateTask(TCB* task) {
-	TCB* tcbs = kernelVariables.tcbList;
-
-	if (task->stack_size < MIN_THREAD_STACK_SIZE || task->ptask == NULL){
-		DEBUG_PRINTF("Failed to create task. Stack size too small or missing ptr to function\r\n");
-		return RTX_ERR;
-	}
-
-	if (kernelVariables.numAvaliableTasks == MAX_USER_TASKS || kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
-		DEBUG_PRINTF("Failed to create task. Not enough memory or reached maximum allowed tasks\r\n");
-		return RTX_ERR;
-	}
-
-	int TIDtoOverwrite = -1;
-	int TIDofEmptyTCB = 2147483647;
-	int TCBStackSmallest = 2147483647;
-	for (int i = 1; i < MAX_TASKS; i++) {
-		// Found terminated task. Check if we can fit the new TCB into it.
-		if (tcbs[i].state == DORMANT) {
-			if (tcbs[i].original_stack_size >= task->stack_size){
-				if (tcbs[i].original_stack_size < TCBStackSmallest){
-					TCBStackSmallest = tcbs[i].original_stack_size;
-					TIDtoOverwrite = i;
-				}
-			}
-		}
-
-		// Found uninitialized TCB
-		int currentTID = i;
-		if (tcbs[i].state == CREATED){
-			if (currentTID <= TIDofEmptyTCB) {
-				TIDofEmptyTCB = i;
-			}
-		}
-	}
-
-	if (TIDtoOverwrite != -1) {
-		DEBUG_PRINTF("Found TCB To Overwrite with TID: %d. Stack size: %d\r\n", TIDtoOverwrite, tcbs[TIDtoOverwrite].stack_size);
-
-		tcbs[TIDtoOverwrite].ptask = task->ptask;
-		tcbs[TIDtoOverwrite].state = READY;
-		tcbs[TIDtoOverwrite].current_sp = tcbs[TIDtoOverwrite].stack_high;
-		tcbs[TIDtoOverwrite].stack_size = task->stack_size;
-		tcbs[TIDtoOverwrite].args = task->args;
-		kernelVariables.numAvaliableTasks++;
-		return RTX_OK;
-	}
-
-	if (TIDofEmptyTCB != 2147483647) {
-		tcbs[TIDofEmptyTCB].ptask = task->ptask;
-		tcbs[TIDofEmptyTCB].stack_high = (U32)Get_Thread_Stack(task->stack_size);
-		tcbs[TIDofEmptyTCB].tid = TIDofEmptyTCB;
-		tcbs[TIDofEmptyTCB].state = READY;
-		tcbs[TIDofEmptyTCB].stack_size = task->stack_size;
-		tcbs[TIDofEmptyTCB].current_sp = tcbs[TIDofEmptyTCB].stack_high;
-		tcbs[TIDofEmptyTCB].original_stack_size = task->stack_size;
-		tcbs[TIDofEmptyTCB].args = task->args;
-
-		task->tid = TIDofEmptyTCB;
-		kernelVariables.totalStackUsed += task->stack_size;
-		kernelVariables.numAvaliableTasks++;
-
-		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
-		return RTX_OK;
-	}
-
-	// All free TCB's are currently in use or there is no TCB with enough space to accommodate new task.
-	DEBUG_PRINTF("Failed to create new task. All tasks are currently in use, or there is no TCB with enough space to accommodate new task\r\n");
-	return RTX_ERR;
+	int output;
+	__asm("SVC 1");
+	__asm("MOV %0, R0": "=r"(output));
+	return output;
 }
 
 int osTaskInfo(task_t TID, TCB* task_copy) {
@@ -118,7 +55,7 @@ uint32_t* Create_Thread() {
 	Init_Thread_Stack(&p_threadStack, &print_continuously);
 	p_threadStacks[kernelVariables.numAvaliableTasks - 1] = p_threadStack;
 
-	Trigger_System_Call(CREATE_THREAD);
+	Trigger_System_Call(CREATE_TASK);
 
 	return p_threadStack;
 }
