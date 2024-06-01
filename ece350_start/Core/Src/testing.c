@@ -56,7 +56,7 @@ int main(void)
 	int result = osCreateTask(&test);
 	printf("osCreateTask: %d\r\n", result);
 
-	Scheduler();
+//	Scheduler();
 
 	while (1)
 	{

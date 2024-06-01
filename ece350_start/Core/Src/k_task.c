@@ -6,6 +6,7 @@
  */
 #include "k_task.h"
 #include "main.h"
+#include "common.h"
 #include <stdio.h>
 
 // Do not perform de-fragmentation for lab1 https://piazza.com/class/lvlcv9pc4496o8/post/58
@@ -18,9 +19,13 @@
 
 int osCreateTask(TCB* task) {
 	int output;
-	__asm("SVC 1");
+	TRIGGER_SVC(OS_CREATE_TASK);
 	__asm("MOV %0, R0": "=r"(output));
 	return output;
+}
+
+void osYield(void) {
+	TRIGGER_SVC(OS_YIELD);
 }
 
 int osTaskInfo(task_t TID, TCB* task_copy) {
@@ -61,35 +66,6 @@ task_t getTID (void) {
 	}
 
 	return kernelVariables.currentRunningTID;
-}
-
-uint32_t* Create_Thread() {
-	// Offset from main stack (portion of stack containing interrupts, setups, etc)
-	kernelVariables.numAvaliableTasks += 1;
-	uint32_t* p_threadStack = Get_Thread_Stack_OLD(kernelVariables.numAvaliableTasks);
-
-	// Once we have the new pointer for the thread stack, we can now setup its stack and context
-	// This function will make the stack pointer, point to bottom of stack (technically top since its the last value pushed to it)
-	Init_Thread_Stack(&p_threadStack, &print_continuously);
-	p_threadStacks[kernelVariables.numAvaliableTasks - 1] = p_threadStack;
-
-	Trigger_System_Call(CREATE_TASK);
-
-	return p_threadStack;
-}
-
-void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)()){
-	*(--*p_threadStack) = 1 << 24; // xPSR register, setting chip to "Thumb" mode
-	*(--*p_threadStack) = (uint32_t)callback; // PC Register storing next instruction
-	for (int i = 0; i < 14; i++){
-		*(--*p_threadStack) = 0xA; //An arbitrary number
-	}
-}
-
-uint32_t* Get_Thread_Stack_OLD(unsigned int threadNum){
-    // printf("MSP_INIT: %p\r\n", Get_MSP_INIT_VAL());
-	// ARM Cortex architecture grows stack grows downwards (high address to low address)
-	return (uint32_t*)(( (unsigned int)Get_MSP_INIT_VAL() - MAIN_STACK_SIZE ) - (threadNum-1)*MIN_THREAD_STACK_SIZE);
 }
 
 uint32_t* Get_Thread_Stack(unsigned int stack_size){

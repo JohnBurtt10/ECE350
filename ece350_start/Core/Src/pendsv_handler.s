@@ -3,7 +3,6 @@
 .fpu softvfp
 .thumb
 
-// Store old task registers. Then pop new ones
 .global PendSV_Handler
 .thumb_func
 PendSV_Handler:

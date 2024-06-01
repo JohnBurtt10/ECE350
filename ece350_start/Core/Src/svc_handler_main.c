@@ -29,7 +29,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
   {
     case TEST_ERROR:  /* EnablePrivilegedMode */
       break;
-    case CREATE_TASK:
+    case OS_CREATE_TASK:
 
     	/*
     	 *  Using location of the top of thread's stack (i.e. last value of stackptr)
@@ -40,42 +40,31 @@ int SVC_Handler_Main( unsigned int *svc_args )
 //    	// https://developer.arm.com/documentation/dui0552/a/cortex-m3-peripherals/system-control-block/interrupt-control-and-state-register
 //    	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
 //    	__asm("isb");
-    	printf("SVC CREATE TASK\r\n");
+    	DEBUG_PRINTF(" SVC CREATE TASK\r\n");
     	return createTask((TCB*)svc_args[0]);
     	break;
-    case YIELD:
-    	// Push current task registers to its thread stack
-    	__set_PSP((U32)kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+    case OS_YIELD:
+    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
 
-    	// Iterate through TCB's, determine next run to run.
-    	int TIDtaskToRun = -1;
-    	for (int i = 0; i < kernelVariables.currentRunningTID; i++) {
-    		if (kernelVariables.tcbList[i].state == READY) {
-    			TIDtaskToRun = i;
-    			break;
-    		}
-    	}
-
-    	for (int i = kernelVariables.currentRunningTID; i < MAX_TASKS; i++) {
-    		if (kernelVariables.tcbList[i].state == READY) {
-    			TIDtaskToRun = i;
-    			break;
-    		}
-    	}
-
-    	// TODO: null task case
-
-    	__set_PSP((U32)kernelVariables.tcbList[TIDtaskToRun].current_sp);
-
-
-
-    	kernelVariables.currentRunningTID = TIDtaskToRun;
     	break;
     default:    /* unknown SVC */
       break;
   }
 
   return 0;
+}
+
+void yield(void) {
+	// Find next task to run
+	int nextTID = Scheduler();
+
+	/*
+	 * Save current task state.
+	 * 1) let R0 store current_sp of current task, R1 store current_sp of next task.
+	 */
+
+	__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp);
+
 }
 
 int createTask(TCB* task) {
@@ -123,6 +112,8 @@ int createTask(TCB* task) {
 		tcbs[TIDtoOverwrite].stack_size = task->stack_size;
 		tcbs[TIDtoOverwrite].args = task->args;
 		kernelVariables.numAvaliableTasks++;
+
+		Init_Thread_Stack(tcbs[TIDtoOverwrite].current_sp, task->ptask);
 		return RTX_OK;
 	}
 
@@ -140,6 +131,7 @@ int createTask(TCB* task) {
 		kernelVariables.totalStackUsed += task->stack_size;
 		kernelVariables.numAvaliableTasks++;
 
+		Init_Thread_Stack(&tcbs[TIDtoOverwrite].current_sp, &task->ptask);
 		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
 		return RTX_OK;
 	}
@@ -147,5 +139,13 @@ int createTask(TCB* task) {
 	// All free TCB's are currently in use or there is no TCB with enough space to accommodate new task.
 	DEBUG_PRINTF("Failed to create new task. All tasks are currently in use, or there is no TCB with enough space to accommodate new task\r\n");
 	return RTX_ERR;
+}
+
+void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)()){
+	*(--*p_threadStack) = 1 << 24; // xPSR register, setting chip to "Thumb" mode
+	*(--*p_threadStack) = (uint32_t)callback; // PC Register storing next instruction
+	for (int i = 0; i < 14; i++){
+		*(--*p_threadStack) = 0xA; //An arbitrary number
+	}
 }
 

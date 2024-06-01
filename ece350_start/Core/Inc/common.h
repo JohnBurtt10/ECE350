@@ -21,10 +21,12 @@
 	 #define DEBUG_PRINTF(fmt, ...)
 #endif
 
+
+#define TRIGGER_SVC(X) __asm("SVC %0" : : "i" (X))
 // ----------- SVC CALLS -----------
 #define TEST_ERROR 0
-#define CREATE_TASK 1
-#define YIELD 2
+#define OS_CREATE_TASK 1
+#define OS_YIELD 2
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
@@ -79,8 +81,6 @@ uint32_t* Get_MSP_INIT_VAL();
 
 // Process Stack Pointer register (PSP) represents thread stack pointer
 uint32_t* Get_Process_Stack_PTR();
-
-void Trigger_System_Call(unsigned int systemCall);
 
 // Checks how much of the whole stack is currently used
 unsigned int Get_Total_Memory_Used();
