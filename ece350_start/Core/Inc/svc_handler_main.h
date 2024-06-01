@@ -17,6 +17,8 @@ int createTask(TCB* task);
  */
 void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)());
 
+void contextSwitch(void);
+
 int SVC_Handler_Main( unsigned int *svc_args );
 
 #endif /* INC_SVC_HANDLER_MAIN_H_ */

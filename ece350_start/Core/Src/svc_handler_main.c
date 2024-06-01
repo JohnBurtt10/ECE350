@@ -30,22 +30,16 @@ int SVC_Handler_Main( unsigned int *svc_args )
     case TEST_ERROR:  /* EnablePrivilegedMode */
       break;
     case OS_CREATE_TASK:
-
-    	/*
-    	 *  Using location of the top of thread's stack (i.e. last value of stackptr)
-    	 *  pop 8 values from the stack into registers R4-R11.
-    	 */
-//    	__set_PSP((uint32_t) p_threadStacks[0]); //Setting the PSP register
-//
-//    	// https://developer.arm.com/documentation/dui0552/a/cortex-m3-peripherals/system-control-block/interrupt-control-and-state-register
-//    	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
-//    	__asm("isb");
     	DEBUG_PRINTF(" SVC CREATE TASK\r\n");
     	return createTask((TCB*)svc_args[0]);
     	break;
     case OS_YIELD:
-    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
-
+//    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
+//
+//    	// Save current task state.
+    	__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp);
+    	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+    	__asm("isb");
     	break;
     default:    /* unknown SVC */
       break;
@@ -54,17 +48,13 @@ int SVC_Handler_Main( unsigned int *svc_args )
   return 0;
 }
 
-void yield(void) {
+void contextSwitch(void) {
 	// Find next task to run
 	int nextTID = Scheduler();
+	__set_PSP(kernelVariables.tcbList[nextTID].current_sp);
+	// Begin to grab next task and pop from its stack to resume state.
 
-	/*
-	 * Save current task state.
-	 * 1) let R0 store current_sp of current task, R1 store current_sp of next task.
-	 */
-
-	__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp);
-
+	return;
 }
 
 int createTask(TCB* task) {
@@ -113,7 +103,7 @@ int createTask(TCB* task) {
 		tcbs[TIDtoOverwrite].args = task->args;
 		kernelVariables.numAvaliableTasks++;
 
-		Init_Thread_Stack(tcbs[TIDtoOverwrite].current_sp, task->ptask);
+		Init_Thread_Stack(&tcbs[TIDtoOverwrite].current_sp, &task->ptask);
 		return RTX_OK;
 	}
 
