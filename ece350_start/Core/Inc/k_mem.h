@@ -11,6 +11,7 @@
 #define INC_K_MEM_H_
 
 #include "k_task.h"
+#include "svc_handler_main.h"
 
 //extern TCB* readyTCBs[MAX_TASKS];
 

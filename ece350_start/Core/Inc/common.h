@@ -21,9 +21,12 @@
 	 #define DEBUG_PRINTF(fmt, ...)
 #endif
 
+
+#define TRIGGER_SVC(X) __asm("SVC %0" : : "i" (X))
 // ----------- SVC CALLS -----------
 #define TEST_ERROR 0
-#define CREATE_THREAD 1
+#define OS_CREATE_TASK 1
+#define OS_YIELD 2
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
@@ -35,9 +38,11 @@
 #define TID_NULL 0 //predefined Task ID for the NULL task
 #define MAX_TASKS 16 //maximum number of tasks in the system including null task
 #define MAX_USER_TASKS MAX_TASKS - 1 // Maximum number of user tasks.
+#define NULL_TASK_STACK_SIZE 0x400
 
 #define RTX_OK 1
 #define RTX_ERR 0
+#define MAX_SIGNED_INT_VALUE 2147483647
 
 // ---- Types -------
 typedef unsigned int U32;
@@ -77,8 +82,6 @@ uint32_t* Get_MSP_INIT_VAL();
 
 // Process Stack Pointer register (PSP) represents thread stack pointer
 uint32_t* Get_Process_Stack_PTR();
-
-void Trigger_System_Call(unsigned int systemCall);
 
 // Checks how much of the whole stack is currently used
 unsigned int Get_Total_Memory_Used();

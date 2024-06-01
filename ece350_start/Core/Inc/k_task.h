@@ -29,11 +29,6 @@ uint32_t* Create_Thread();
 void print_continuously(void);
 
 /*
- * brief: Initializes thread stack with given function call and arbitrary values.
- */
-void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)());
-
-/*
  * @brief: Find space to create a new thread stack
  * @retval: returns stack_high address of new stack on success. NULL on failure due to not enough memory
  * @param: Size of stack to allocate
@@ -44,7 +39,7 @@ uint32_t* Get_Thread_Stack_OLD(unsigned int threadNum);
 /*
  * brief: Kills a running thread by clearing the PendSV interrupt
  */
-void Kill_Thread();
+void Kill_Thread(void);
 
 /*
  * @brief: Create a new task and register it with the RTX if possible
@@ -61,5 +56,14 @@ int osCreateTask(TCB* task);
  */
 int osTaskInfo(task_t TID, TCB* task_copy);
 
+/* Make every os____ a svc call. osKernelStart should start a task by BX LR into it using pendSV. (set stack for null task)
+ * @brief:  immediately halts the execution of one task, saves it contexts, runs the scheduler, and loads the context of the next task to run.
+ * 1) When Yielding from current running task to new task, push old task context to thread stack
+ * 		a) New tasks should have stack initalized with arbitary values done as prelab.
+ * 		b) Store args into R0
+ * 2) Iterate through scheduler to determine next task to run.
+ * 3) Pop registers from new task stack and update registers on microcontroller.
+ */
+void osYield(void);
 
 #endif /* INC_K_TASK_H_ */

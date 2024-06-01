@@ -6,6 +6,10 @@
 .global PendSV_Handler
 .thumb_func
 PendSV_Handler:
+	.global contextSwitch
+	// Storing occuring here.
+	BL contextSwitch
+	// Restoring below
 	MRS r0, PSP
 	LDMIA r0!, {r4-r11}
 	MSR PSP, r0

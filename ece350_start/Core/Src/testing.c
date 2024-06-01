@@ -50,8 +50,13 @@ int main(void)
 	printf("MSP Init is: %p\r\n", MSP_INIT_VAL); //note the %p to print apointer. It will be in hex
 
 //	Test_Generate_Thread_Stack();
-	Test_osCreateTask();
-	Scheduler();
+//	Test_osCreateTask();
+	TCB test;
+	Init_Task(&test);
+	int result = osCreateTask(&test);
+	printf("osCreateTask: %d\r\n", result);
+
+//	Scheduler();
 
 	while (1)
 	{
@@ -84,6 +89,8 @@ void Init_Task(TCB* task){
 	task->state = DORMANT;
 	task->stack_size = 0x200;
 	task->current_sp = task->stack_high;
+	task->original_stack_size = 0x200;
+	task->args = NULL;
 }
 
 void Test_osCreateTask() {

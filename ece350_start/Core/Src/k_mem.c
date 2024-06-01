@@ -22,7 +22,7 @@ Kernel_Variables kernelVariables;
 void osKernelInit(void) {
 	kernelVariables.numAvaliableTasks = 0;
 	kernelVariables.currentRunningTID = -1;
-	kernelVariables.totalStackUsed = MAIN_STACK_SIZE;
+	kernelVariables.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE;
 	osInitTCBArray();
 	return;
 }
@@ -33,9 +33,9 @@ void osInitTCBArray() {
 	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
 	kernelVariables.tcbList[0].tid = TID_NULL;
 	kernelVariables.tcbList[0].state = READY;
-	kernelVariables.tcbList[0].stack_size = 0x400;
+	kernelVariables.tcbList[0].stack_size = NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].current_sp = kernelVariables.tcbList[0].stack_high;
-	kernelVariables.tcbList[0].original_stack_size = 0x400;
+	kernelVariables.tcbList[0].original_stack_size = NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].args = NULL;
 
 	for (int i = 1; i < MAX_TASKS; i++) {

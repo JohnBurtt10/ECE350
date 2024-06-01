@@ -49,12 +49,10 @@
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -188,7 +186,6 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -200,37 +197,5 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
-/**
-  * @brief Handles the actual system call by first retrieving the system call number and then doing whatever we want with it.
-  */
-void SVC_Handler_Main( unsigned int *svc_args )
-{
-  unsigned int svc_number;
 
-  /*
-  * Stack contains:
-  * r0, r1, r2, r3, r12, r14, the return address and xPSR
-  * First argument (r0) is svc_args[0]
-  */
-  svc_number = ( ( char * )svc_args[ 6 ] )[ -2 ] ;
-  printf("System call number: %d\r\n", svc_number );
-  switch( svc_number )
-  {
-    case TEST_ERROR:  /* EnablePrivilegedMode */
-      break;
-    case CREATE_THREAD:
-    	/*
-    	 *  Using location of the top of thread's stack (i.e. last value of stackptr)
-    	 *  pop 8 values from the stack into registers R4-R11.
-    	 */
-    	__set_PSP((uint32_t) p_threadStacks[0]); //Setting the PSP register
-
-    	// https://developer.arm.com/documentation/dui0552/a/cortex-m3-peripherals/system-control-block/interrupt-control-and-state-register
-    	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
-    	__asm("isb");
-    	break;
-    default:    /* unknown SVC */
-      break;
-  }
-}
 /* USER CODE END 1 */
