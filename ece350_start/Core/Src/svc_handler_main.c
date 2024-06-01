@@ -70,14 +70,19 @@ int createTask(TCB* task) {
 			return RTX_ERR;
 		}
 
-	if (kernelVariables.numAvaliableTasks == MAX_TASKS || kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
-		DEBUG_PRINTF("Failed to create task. Not enough memory or reached maximum allowed tasks\r\n");
+	if (kernelVariables.numAvaliableTasks == MAX_TASKS){
+		DEBUG_PRINTF(" Failed to create task. Reached maximum allowed tasks\r\n");
 		return RTX_ERR;
 	}
 
+	if (kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
+			DEBUG_PRINTF(" Failed to create task. Not enough memory\r\n");
+			return RTX_ERR;
+		}
+
 	int TIDtoOverwrite = -1;
-	int TIDofEmptyTCB = 2147483647;
-	int TCBStackSmallest = 2147483647;
+	int TIDofEmptyTCB = MAX_SIGNED_INT_VALUE;
+	int TCBStackSmallest = MAX_SIGNED_INT_VALUE;
 	for (int i = 1; i < MAX_TASKS; i++) {
 		// Found terminated task. Check if we can fit the new TCB into it.
 		if (tcbs[i].state == DORMANT) {

@@ -42,6 +42,7 @@
 
 #define RTX_OK 1
 #define RTX_ERR 0
+#define MAX_SIGNED_INT_VALUE 2147483647
 
 // ---- Types -------
 typedef unsigned int U32;
