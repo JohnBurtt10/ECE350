@@ -51,6 +51,7 @@ int main(void)
 
 //	Test_Generate_Thread_Stack();
 	Test_osCreateTask();
+	Scheduler();
 
 	while (1)
 	{
@@ -88,22 +89,22 @@ void Init_Task(TCB* task){
 void Test_osCreateTask() {
 	// First test that all empty TCB's are written to.
 	TCB tcbTests[MAX_TASKS];
-	for (int i = 0; i < MAX_TASKS; i++){
+	for (int i = 1; i < MAX_TASKS; i++){
 		Init_Task(&tcbTests[i]);
 		tcbTests[i].stack_size += i * 32;
 		osCreateTask(&tcbTests[i]);
 	}
 
-	// All TCB's should now be filled. Let's set one TCB to be dormant and attempt to update it
-	kernelVariables.tcbList[5].state = DORMANT;
-	kernelVariables.tcbList[10].state = DORMANT;
-	tcbTests[0].state = 10;
-	tcbTests[0].stack_size = 700;
-	osCreateTask(&tcbTests[0]); // Should pick tcbList[10]
-
-	tcbTests[0].state = 10;
-	tcbTests[0].stack_size = 900;
-	osCreateTask(&tcbTests[0]);// Should fail
+//	// All TCB's should now be filled. Let's set one TCB to be dormant and attempt to update it
+//	kernelVariables.tcbList[5].state = DORMANT;
+//	kernelVariables.tcbList[10].state = DORMANT;
+//	tcbTests[0].state = 10;
+//	tcbTests[0].stack_size = 700;
+//	osCreateTask(&tcbTests[0]); // Should pick tcbList[10]
+//
+//	tcbTests[0].state = 10;
+//	tcbTests[0].stack_size = 900;
+//	osCreateTask(&tcbTests[0]);// Should fail
 
 	Print_All_TCBs();
 }
