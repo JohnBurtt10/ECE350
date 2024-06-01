@@ -60,10 +60,15 @@ void contextSwitch(void) {
 int createTask(TCB* task) {
 	TCB* tcbs = kernelVariables.tcbList;
 
-	if (task->stack_size < MIN_THREAD_STACK_SIZE || task->ptask == NULL){
-		DEBUG_PRINTF("Failed to create task. Stack size too small or missing ptr to function\r\n");
+	if (task->stack_size < MIN_THREAD_STACK_SIZE){
+		DEBUG_PRINTF(" Failed to create task. Stack size too small.\r\n");
 		return RTX_ERR;
 	}
+
+	if (task->ptask == NULL){
+			DEBUG_PRINTF(" Failed to create task. Missing pointer to function\r\n");
+			return RTX_ERR;
+		}
 
 	if (kernelVariables.numAvaliableTasks == MAX_TASKS || kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
 		DEBUG_PRINTF("Failed to create task. Not enough memory or reached maximum allowed tasks\r\n");
