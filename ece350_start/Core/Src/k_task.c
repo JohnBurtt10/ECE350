@@ -28,8 +28,13 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
 		return RTX_ERR;
 	}
 
-	if (TID >= 0 && TID <= MAX_TASKS){
+	if (TID >= 0 && TID < MAX_TASKS){
 		TCB task = kernelVariables.tcbList[TID];
+
+		// Check that task exists and resources have already been allocated (not in CREATED state)
+		if(task.state == DORMANT || task.state == READY || task.state == RUNNING){
+			return RTX_ERR;
+		}
 
 		task_copy->args = task.args;
 		task_copy->current_sp = task.current_sp;
@@ -43,6 +48,19 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
 	}
 
 	return RTX_ERR;
+}
+
+/**
+ * Returns the TID of a task, used by the user application.
+ * Returns 0 if the Kernel has not started
+*/
+task_t getTID (void) {
+	// If the kernel has not started, no task is running
+	if(kernelVariables.currentRunningTID == -1){
+		return 0;
+	}
+
+	return kernelVariables.currentRunningTID;
 }
 
 uint32_t* Create_Thread() {
