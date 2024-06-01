@@ -103,7 +103,7 @@ int createTask(TCB* task) {
 		tcbs[TIDtoOverwrite].args = task->args;
 		kernelVariables.numAvaliableTasks++;
 
-		Init_Thread_Stack(&tcbs[TIDtoOverwrite].current_sp, &task->ptask);
+		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, &task->ptask, TIDtoOverwrite);
 		return RTX_OK;
 	}
 
@@ -121,7 +121,7 @@ int createTask(TCB* task) {
 		kernelVariables.totalStackUsed += task->stack_size;
 		kernelVariables.numAvaliableTasks++;
 
-		Init_Thread_Stack(&tcbs[TIDtoOverwrite].current_sp, &task->ptask);
+		Init_Thread_Stack((U32*)tcbs[TIDofEmptyTCB].current_sp, &task->ptask, TIDofEmptyTCB);
 		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
 		return RTX_OK;
 	}
@@ -131,11 +131,14 @@ int createTask(TCB* task) {
 	return RTX_ERR;
 }
 
-void Init_Thread_Stack(uint32_t** p_threadStack, void (*callback)()){
-	*(--*p_threadStack) = 1 << 24; // xPSR register, setting chip to "Thumb" mode
-	*(--*p_threadStack) = (uint32_t)callback; // PC Register storing next instruction
+void Init_Thread_Stack(uint32_t* stack_pointer, void (*callback)(void* args), int TID){
+	DEBUG_PRINTF(" CURRENT_SP ADDRESS: %p\r\n", stack_pointer);
+	*(--stack_pointer) = 1 << 24; // xPSR register, setting chip to "Thumb" mode
+	*(--stack_pointer) = (uint32_t)callback; // PC Register storing next instruction
 	for (int i = 0; i < 14; i++){
-		*(--*p_threadStack) = 0xA; //An arbitrary number
+		*(--stack_pointer) = 0xA; //An arbitrary number
 	}
+	DEBUG_PRINTF(" NEW CURRENT_SP ADDRESS: %p\r\n", stack_pointer);
+	kernelVariables.tcbList[TID].current_sp = (U32)stack_pointer;
 }
 
