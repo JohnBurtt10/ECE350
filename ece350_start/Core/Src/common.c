@@ -33,7 +33,6 @@ unsigned int Get_Total_Memory_Used() {
 
 int Scheduler(void) {
 	int TIDTaskToRun = 0;
-	kernelVariables.currentRunningTID = 5;
 	// Start from current running tid and find next one to run
 	for (int i = kernelVariables.currentRunningTID + 1; i <= MAX_TASKS + kernelVariables.currentRunningTID; i++) {
 		int TID = i % MAX_TASKS;
@@ -41,8 +40,7 @@ int Scheduler(void) {
 		// Ignore null task.
 		if (kernelVariables.tcbList[TID].state == READY && TID != 0) {
 			DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TID);
-			TIDTaskToRun = TID;
-			break;
+			return TID;
 		}
 	}
 	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
