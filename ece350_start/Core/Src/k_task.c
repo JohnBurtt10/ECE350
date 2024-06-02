@@ -111,26 +111,12 @@ void Kill_Thread() {
  * Else returns RTX_ERR and does nothing
  */
 int osTaskExit(void){	
-	task_t current_TID = getTID;
-
-	if(current_TID == -1){
-		return RTX_ERR;
-	}
-
-	// Check if current task exists
-	TCB task = kernelVariables.tcbList[current_TID];
-
-	/* If there are no other tasks scheduled, execute null task*/
-
-	if(task.state == RUNNING){ // may be a redundant check
-		// Changing the state to DORMANT removes the task from the scheduler
-		task.state = DORMANT;
-		
-		// Exits the current task and calls the scheduler
-		TRIGGER_SVC(OS_TASK_EXIT);
-		return RTX_OK;
-	}
-	return RTX_ERR;
+	int taskExitStatus;
+	TRIGGER_SVC(OS_TASK_EXIT);
+	
+	__asm("MOV %0, R0": "=r"(taskExitStatus));
+	
+	return taskExitStatus;
 }
 
 // decrement dormant

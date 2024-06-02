@@ -43,12 +43,29 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	break;
 	case OS_TASK_EXIT:
 		DEBUG_PRINTF("TASK EXIT\r\n");
+		task_t current_TID = kernelVariables.currentRunningTID;
 
-		// reset the tasks stackpointer to the top of the stack to b reused
-		__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
-		// call the scheduler to yield and run the next task
-		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
-		__asm("isb");
+		if(current_TID == -1){
+			return RTX_ERR;
+		}
+
+		// Check if current task exists
+		TCB task = kernelVariables.tcbList[current_TID];
+
+		/* TODO: If there are no other tasks scheduled, execute null task*/
+
+		if(task.state == RUNNING){ // may be a redundant check
+			// Changing the state to DORMANT removes the task from the scheduler
+			task.state = DORMANT;
+			
+			// reset the tasks stackpointer to the top of the stack to b reused
+			__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+			// call the scheduler to yield and run the next task
+			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+			__asm("isb");
+			return RTX_OK;
+		}
+		return RTX_ERR;
 		break;
     default:    /* unknown SVC */
       break;
@@ -160,4 +177,3 @@ void Init_Thread_Stack(uint32_t* stack_pointer, void (*callback)(void* args), in
 	DEBUG_PRINTF(" NEW CURRENT_SP ADDRESS: %p\r\n", stack_pointer);
 	kernelVariables.tcbList[TID].current_sp = (U32)stack_pointer;
 }
-
