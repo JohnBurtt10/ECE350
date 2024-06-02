@@ -54,27 +54,29 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	// No error, then run first avaliable task
     	return RTX_OK;
     	break;
-case OS_TASK_EXIT:
-	DEBUG_PRINTF("TASK EXIT\r\n");
-	task_t current_TID = kernelVariables.currentRunningTID;
+	case OS_TASK_EXIT:
+		DEBUG_PRINTF("TASK EXIT\r\n");
+		task_t current_TID = kernelVariables.currentRunningTID;
 
-	if(current_TID == -1){
-		return RTX_ERR;
-	}
+		if(current_TID == -1){
+			return RTX_ERR;
+		}
 
-	// Check if current task exists
-	TCB *task = &kernelVariables.tcbList[current_TID];
+		// Check if current task exists
+		TCB *task = &kernelVariables.tcbList[current_TID];
 
-	if(task->state == RUNNING){ // may be a redundant check
-	// Changing the state to DORMANT removes the task from the scheduler
-	// reset the exiting tasks stackpointer to the top of the stack to be reused
+		if(task->state == RUNNING){ // may be a redundant check
+			// reset the exiting tasks stackpointer to the top of the stack to be reused
 			__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
-	// call the scheduler to yield and run the next task
-	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
-		__asm("isb");
-		task->state = DORMANT;
-		return RTX_OK;
-	}
+			
+			// call the scheduler to yield and run the next task
+			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+			__asm("isb");
+
+			// Changing the state to DORMANT removes the task from the scheduler
+			task->state = DORMANT;
+			return RTX_OK;
+		}
 	return RTX_ERR;
         break;
     default:    /* unknown SVC */
