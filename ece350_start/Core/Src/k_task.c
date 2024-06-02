@@ -28,6 +28,17 @@ void osYield(void) {
 	TRIGGER_SVC(OS_YIELD);
 }
 
+int osKernelStart(void) {
+	int output;
+	TRIGGER_SVC(OS_KERNEL_START);
+	__asm("MOV %0, R0": "=r"(output));
+
+	if (output == RTX_OK){
+		TRIGGER_SVC(OS_YIELD);
+	}
+	return output;
+}
+
 int osTaskInfo(task_t TID, TCB* task_copy) {
 	if (task_copy == NULL){
 		return RTX_ERR;
@@ -90,10 +101,25 @@ uint32_t* Get_Thread_Stack(unsigned int stack_size){
 	return (uint32_t*) newStackStart;
 }
 
-void print_continuously(void){
-	while(1){
-		printf("Thread2222\r\n");
-	}
+void anakin(void){
+	DEBUG_PRINTF("  You underestimate my power Obi-Wan\r\n");
+
+	osYield();
+
+	DEBUG_PRINTF("  *Gets chopped in half and dies like a loser*\r\n");
+}
+
+void obiwan(void) {
+	DEBUG_PRINTF("Hello, there!\r\n");
+	osYield();
+}
+
+void Null_Task_Function(void) {
+	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
+
+	while (1);
+
+	return;
 }
 
 void Kill_Thread() {

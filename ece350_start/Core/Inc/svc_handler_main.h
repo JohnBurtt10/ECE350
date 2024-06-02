@@ -19,6 +19,8 @@ void Init_Thread_Stack(uint32_t* stack_pointer, void (*callback)(void* args), in
 
 void contextSwitch(void);
 
+void save_new_psp(void);
+
 int SVC_Handler_Main( unsigned int *svc_args );
 
 #endif /* INC_SVC_HANDLER_MAIN_H_ */
