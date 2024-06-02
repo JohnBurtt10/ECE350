@@ -100,3 +100,49 @@ void Kill_Thread() {
 	SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; // Kills thread
 	return;
 }
+
+
+/**
+ * Immediately causes the current task to exit and calls the scheduler (similar to osYield)
+ * When called, the calling task is removed from the scheduler and any resources it was using are returned to the operating system
+ * Resources returned: can re-use the same TID and/or stack for subsequent tasks
+ * Set the status to DORMANT or memory allocation
+ * Returns RTX_OK if it was called by a running task
+ * Else returns RTX_ERR and does nothing
+ */
+int osTaskExit(void){
+	// Test using null task (0 index)
+	
+	task_t current_TID = getTID;
+
+	if(current_TID == -1){
+		return RTX_ERR;
+	}
+
+	// Check if current task exists
+	TCB task = kernelVariables.tcbList[current_TID];
+	kernelVariables.currentRunningTID;
+
+	/* If there are no other tasks scheduled, execute null task*/
+
+	if(task.state == RUNNING){
+		// Changing the state to DORMANT removes the task from the scheduler
+		task.state = DORMANT;
+
+		// Call OS_YIELD
+		TRIGGER_SVC(OS_YIELD);
+		return RTX_OK;
+	}
+	return RTX_ERR;
+
+	int output;
+	return output;
+
+
+}
+
+// decrement dormant
+/*
+ * push current and pop next from registers
+ *
+ */
