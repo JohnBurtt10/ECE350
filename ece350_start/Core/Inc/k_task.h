@@ -26,7 +26,14 @@ uint32_t* Create_Thread();
 /*
  * brief: Simple function used to test thread functionality
  */
-void print_continuously(void);
+void anakin(void);
+
+/*
+ * brief: Simple function used to test thread functionality
+ */
+void obiwan(void);
+
+void luke(void);
 
 /*
  * @brief: Find space to create a new thread stack
@@ -34,7 +41,6 @@ void print_continuously(void);
  * @param: Size of stack to allocate
  */
 uint32_t* Get_Thread_Stack(unsigned int stack_size);
-uint32_t* Get_Thread_Stack_OLD(unsigned int threadNum);
 
 /*
  * brief: Kills a running thread by clearing the PendSV interrupt
@@ -65,5 +71,14 @@ int osTaskInfo(task_t TID, TCB* task_copy);
  * 3) Pop registers from new task stack and update registers on microcontroller.
  */
 void osYield(void);
+
+int osTaskExit(void);
+
+int osKernelStart(void);
+
+/*
+ * brief: Function to be ran by null task. Continuously calls osYield to yield
+ */
+void Null_Task_Function(void);
 
 #endif /* INC_K_TASK_H_ */

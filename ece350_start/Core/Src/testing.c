@@ -22,6 +22,7 @@
 #ifdef DEBUG_ENABLE
 void Test_Generate_Thread_Stack();
 void Init_Task(TCB* task);
+void Init_Task_2(TCB* task);
 void Test_osCreateTask(); // Will fill all tcb's with the same tcb.
 void Print_All_TCBs();
 
@@ -41,7 +42,22 @@ int main(void)
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	printf("IN DEBUGGING MODE. TO DISABLE GO TO: common.h AND COMMENT OUT #define DEBUG_ENABLE\r\n");
+	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should fail
 	osKernelInit();
+
+	TCB test1, test2, test3;
+	Init_Task(&test1);
+	Init_Task_2(&test2);
+	Init_Task_3(&test3);
+	int result1 = osCreateTask(&test1);
+	int result2 = osCreateTask(&test2);
+	int result3 = osCreateTask(&test3);
+	printf("osCreateTask: %d\r\n", result1);
+	printf("osCreateTask: %d\r\n", result2);
+	printf("osCreateTask:  %d\r\n", result3);
+
+
+	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should succeed
 
 	// Main stack pointer
 	// 0x0 pointer is a pointer that points to a pointer storing vector table.
@@ -51,11 +67,9 @@ int main(void)
 
 //	Test_Generate_Thread_Stack();
 //	Test_osCreateTask();
-	TCB test;
-	Init_Task(&test);
-	int result = osCreateTask(&test);
-	printf("osCreateTask: %d\r\n", result);
 
+	kernelVariables.currentRunningTID = 1;
+	osYield();
 //	Scheduler();
 
 	while (1)
@@ -84,9 +98,29 @@ void Test_Generate_Thread_Stack(){
 }
 
 void Init_Task(TCB* task){
-	task->ptask = 0x1234;
-	task->stack_high = 0x0;
-	task->state = DORMANT;
+	task->ptask = &anakin;
+	task->stack_high = (U32)Get_Thread_Stack(0x200);
+	task->state = READY;
+	task->stack_size = 0x200;
+	task->current_sp = task->stack_high;
+	task->original_stack_size = 0x200;
+	task->args = NULL;
+}
+
+void Init_Task_2(TCB* task){
+	task->ptask = &obiwan;
+	task->stack_high = (U32)Get_Thread_Stack(0x200);
+	task->state = READY;
+	task->stack_size = 0x200;
+	task->current_sp = task->stack_high;
+	task->original_stack_size = 0x200;
+	task->args = NULL;
+}
+
+void Init_Task_3(TCB* task){
+	task->ptask = &luke;
+	task->stack_high = (U32)Get_Thread_Stack(0x200);
+	task->state = READY;
 	task->stack_size = 0x200;
 	task->current_sp = task->stack_high;
 	task->original_stack_size = 0x200;

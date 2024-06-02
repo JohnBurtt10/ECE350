@@ -34,27 +34,80 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	return createTask((TCB*)svc_args[0]);
     	break;
     case OS_YIELD:
-//    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
-//
-//    	// Save current task state.
-    	__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp);
+    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
+    	// Save current task state.
+
+    	// MIGHT NEED TO REMOVE __set_PSP AS IT OVERWRITES PSP AFTER INTERRUPT PUSHES REGISTERS TO PROCESS STACK
+    	// THEREFORE, PSP IS ALREADY UPDATED BY INTERRUIPT
+    	if (kernelVariables.currentRunningTID == -1) {
+    		__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+    	}
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
     	break;
+    case OS_KERNEL_START:
+    	if (kernelVariables.currentRunningTID != -1 || kernelVariables.kernelInitRan != 1){
+    		DEBUG_PRINTF(" The kernel has not been initialized\r\n");
+    		return RTX_ERR;
+    	}
+
+    	// No error, then run first avaliable task
+    	return RTX_OK;
+    	break;
+	case OS_TASK_EXIT:
+		DEBUG_PRINTF("TASK EXIT\r\n");
+		task_t current_TID = kernelVariables.currentRunningTID;
+
+		if(current_TID == -1){
+			return RTX_ERR;
+		}
+
+		// Check if current task exists
+		TCB *task = &kernelVariables.tcbList[current_TID];
+
+		if(task->state == RUNNING){ // may be a redundant check
+			// reset the exiting tasks stackpointer to the top of the stack to be reused
+			__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+			
+			// call the scheduler to yield and run the next task
+			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+			__asm("isb");
+
+			// Changing the state to DORMANT removes the task from the scheduler
+			task->state = DORMANT;
+			return RTX_OK;
+		}
+	return RTX_ERR;
+        break;
     default:    /* unknown SVC */
       break;
   }
 
-  return 0;
+  return RTX_ERR;
 }
 
 void contextSwitch(void) {
-	// Find next task to run
+	if (kernelVariables.currentRunningTID != -1) {
+		// Find next task to run
+		kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = __get_PSP();
+
+		// Update current task to READY if yielding from task, if exiting, state remains dormant
+		if (kernelVariables.tcbList[kernelVariables.currentRunningTID].state == RUNNING){
+			kernelVariables.tcbList[kernelVariables.currentRunningTID].state = READY;
+		}
+	}
+	
+
 	int nextTID = Scheduler();
 	__set_PSP(kernelVariables.tcbList[nextTID].current_sp);
-	// Begin to grab next task and pop from its stack to resume state.
 
+	kernelVariables.currentRunningTID = nextTID;
+	kernelVariables.tcbList[nextTID].state = RUNNING;
 	return;
+}
+
+void save_new_psp(void){
+	kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high;
 }
 
 int createTask(TCB* task) {
@@ -113,7 +166,7 @@ int createTask(TCB* task) {
 		tcbs[TIDtoOverwrite].args = task->args;
 		kernelVariables.numAvaliableTasks++;
 
-		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, &task->ptask, TIDtoOverwrite);
+		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, task->ptask, TIDtoOverwrite);
 		return RTX_OK;
 	}
 
@@ -131,7 +184,7 @@ int createTask(TCB* task) {
 		kernelVariables.totalStackUsed += task->stack_size;
 		kernelVariables.numAvaliableTasks++;
 
-		Init_Thread_Stack((U32*)tcbs[TIDofEmptyTCB].current_sp, &task->ptask, TIDofEmptyTCB);
+		Init_Thread_Stack((U32*)tcbs[TIDofEmptyTCB].current_sp, task->ptask, TIDofEmptyTCB);
 		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
 		return RTX_OK;
 	}
@@ -151,4 +204,3 @@ void Init_Thread_Stack(uint32_t* stack_pointer, void (*callback)(void* args), in
 	DEBUG_PRINTF(" NEW CURRENT_SP ADDRESS: %p\r\n", stack_pointer);
 	kernelVariables.tcbList[TID].current_sp = (U32)stack_pointer;
 }
-

@@ -28,6 +28,17 @@ void osYield(void) {
 	TRIGGER_SVC(OS_YIELD);
 }
 
+int osKernelStart(void) {
+	int output;
+	TRIGGER_SVC(OS_KERNEL_START);
+	__asm("MOV %0, R0": "=r"(output));
+
+	if (output == RTX_OK){
+		TRIGGER_SVC(OS_YIELD);
+	}
+	return output;
+}
+
 int osTaskInfo(task_t TID, TCB* task_copy) {
 	if (task_copy == NULL){
 		return RTX_ERR;
@@ -90,13 +101,60 @@ uint32_t* Get_Thread_Stack(unsigned int stack_size){
 	return (uint32_t*) newStackStart;
 }
 
-void print_continuously(void){
-	while(1){
-		printf("Thread2222\r\n");
-	}
+void anakin(void){
+	DEBUG_PRINTF("  You underestimate my power Obi-Wan\r\n");
+
+	osYield();
+
+	DEBUG_PRINTF("  *Gets chopped in half and almost dies like a loser*\r\n");
+
+	osTaskExit();
+}
+
+void obiwan(void) {
+	DEBUG_PRINTF("Hello, there!\r\n");
+
+	osTaskExit();
+}
+
+
+void luke(void){
+	DEBUG_PRINTF("Dad?\r\n");
+
+	osYield();
+
+	DEBUG_PRINTF("Oh\r\n");
+
+	osYield();
+}
+
+void Null_Task_Function(void) {
+	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
+
+	while (1);
+
+	return;
 }
 
 void Kill_Thread() {
 	SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; // Kills thread
 	return;
+}
+
+
+/**
+ * Immediately causes the current task to exit and calls the scheduler (similar to osYield)
+ * When called, the calling task is removed from the scheduler and any resources it was using are returned to the operating system
+ * Resources returned: can re-use the same TID and/or stack for subsequent tasks
+ * Set the status to DORMANT or memory allocation
+ * Returns RTX_OK if it was called by a running task
+ * Else returns RTX_ERR and does nothing
+ */
+int osTaskExit(void){	
+	int taskExitStatus;
+	TRIGGER_SVC(OS_TASK_EXIT);
+	
+	__asm("MOV %0, R0": "=r"(taskExitStatus));
+	
+	return taskExitStatus;
 }

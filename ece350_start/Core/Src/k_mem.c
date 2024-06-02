@@ -13,23 +13,20 @@
 
 // ------- Globals --------
 uint32_t* p_threadStacks[MAX_TASKS];
-
-Kernel_Variables kernelVariables;
-
-// Instead of using a circular queue, we will utilize the currentRunningTID by incrementing it by one each time we want to switch to another tcb.
-// This will behave closely like a queue, but will remove any complex data structures
+Kernel_Variables kernelVariables = {.currentRunningTID = -1,
+									.kernelInitRan = 0,
+									.numAvaliableTasks = 0,
+									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE};
 
 void osKernelInit(void) {
-	kernelVariables.numAvaliableTasks = 0;
-	kernelVariables.currentRunningTID = -1;
-	kernelVariables.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE;
 	osInitTCBArray();
+	kernelVariables.kernelInitRan = 1;
 	return;
 }
 
 void osInitTCBArray() {
 	// Initializing null task
-	kernelVariables.tcbList[0].ptask = (U32)print_continuously;
+	kernelVariables.tcbList[0].ptask = (void*) &Null_Task_Function;
 	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
 	kernelVariables.tcbList[0].tid = TID_NULL;
 	kernelVariables.tcbList[0].state = READY;
@@ -37,6 +34,8 @@ void osInitTCBArray() {
 	kernelVariables.tcbList[0].current_sp = kernelVariables.tcbList[0].stack_high;
 	kernelVariables.tcbList[0].original_stack_size = NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].args = NULL;
+
+	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].stack_high, kernelVariables.tcbList[0].ptask, 0);
 
 	for (int i = 1; i < MAX_TASKS; i++) {
 		kernelVariables.tcbList[i].ptask = NULL;
