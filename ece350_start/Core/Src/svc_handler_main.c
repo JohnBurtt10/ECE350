@@ -136,7 +136,7 @@ int createTask(TCB* task) {
 		tcbs[TIDtoOverwrite].args = task->args;
 		kernelVariables.numAvaliableTasks++;
 
-		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, &task->ptask, TIDtoOverwrite);
+		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, task->ptask, TIDtoOverwrite);
 		return RTX_OK;
 	}
 
@@ -154,7 +154,7 @@ int createTask(TCB* task) {
 		kernelVariables.totalStackUsed += task->stack_size;
 		kernelVariables.numAvaliableTasks++;
 
-		Init_Thread_Stack((U32*)tcbs[TIDofEmptyTCB].current_sp, &task->ptask, TIDofEmptyTCB);
+		Init_Thread_Stack((U32*)tcbs[TIDofEmptyTCB].current_sp, task->ptask, TIDofEmptyTCB);
 		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
 		return RTX_OK;
 	}

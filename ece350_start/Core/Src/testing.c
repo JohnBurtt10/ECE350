@@ -43,6 +43,12 @@ int main(void)
 	printf("IN DEBUGGING MODE. TO DISABLE GO TO: common.h AND COMMENT OUT #define DEBUG_ENABLE\r\n");
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should fail
 	osKernelInit();
+
+	TCB test;
+	Init_Task(&test);
+	int result = osCreateTask(&test);
+	printf("osCreateTask: %d\r\n", result);
+
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should succeed
 
 	// Main stack pointer
@@ -53,10 +59,6 @@ int main(void)
 
 //	Test_Generate_Thread_Stack();
 //	Test_osCreateTask();
-	TCB test;
-	Init_Task(&test);
-	int result = osCreateTask(&test);
-	printf("osCreateTask: %d\r\n", result);
 
 	kernelVariables.currentRunningTID = 1;
 	osYield();
