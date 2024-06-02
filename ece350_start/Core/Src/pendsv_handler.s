@@ -7,27 +7,27 @@
 .thumb_func
 PendSV_Handler:
 	.global contextSwitch
+	.global save_new_psp
 	TST lr, #4
-	PUSH {LR}
 	ITE EQ
 	MRSEQ r0, MSP
 	MRSNE r0, PSP
 
-	POP {LR}
 	TST lr, #4
 	BEQ switch
 
 	// Store current running task state.
-	MRS r0, PSP
 	STMDB r0!, {r4-r11}
-	MRS r0, PSP
-
+	MSR PSP, r0
 switch:
+	PUSH {LR} // Might not be needed.
 	BL contextSwitch
-
+	POP {LR}
 	// Run next task
 	MRS r0, PSP
 	LDMIA r0!, {r4-r11}
 	MSR PSP, r0
+	BL save_new_psp // Set current_sp back to stack_high as we should have popped all registers from stack after exiting interrupt
+
 	MOV LR, #0xFFFFFFFD // put magic number into LR register that indicates exit from interrupt and to use the PSP as the SP
 	BX LR // A branch to this "magic number" will restore 8 hardware-saved registers and jump to PC. (PSR, PC, LR, R12, R3, R2, R1, R0)

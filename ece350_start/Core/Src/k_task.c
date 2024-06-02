@@ -107,6 +107,14 @@ void print_continuously(void){
 	}
 }
 
+void Null_Task_Function(void) {
+	while (1) {
+		DEBUG_PRINTF(" IN NULL TASK. ATTEMPTING YIELD\r\n");
+		osYield();
+	}
+	return;
+}
+
 void Kill_Thread() {
 	SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; // Kills thread
 	return;

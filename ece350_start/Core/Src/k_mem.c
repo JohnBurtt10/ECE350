@@ -26,7 +26,7 @@ void osKernelInit(void) {
 
 void osInitTCBArray() {
 	// Initializing null task
-	kernelVariables.tcbList[0].ptask = (void*) &print_continuously;
+	kernelVariables.tcbList[0].ptask = (void*) &Null_Task_Function;
 	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
 	kernelVariables.tcbList[0].tid = TID_NULL;
 	kernelVariables.tcbList[0].state = READY;

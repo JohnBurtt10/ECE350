@@ -36,7 +36,12 @@ int SVC_Handler_Main( unsigned int *svc_args )
     case OS_YIELD:
     	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
     	// Save current task state.
-    	__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp);
+
+    	// MIGHT NEED TO REMOVE __set_PSP AS IT OVERWRITES PSP AFTER INTERRUPT PUSHES REGISTERS TO PROCESS STACK
+    	// THEREFORE, PSP IS ALREADY UPDATED BY INTERRUIPT
+    	if (kernelVariables.currentRunningTID == -1) {
+    		__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+    	}
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
     	break;
@@ -69,6 +74,10 @@ void contextSwitch(void) {
 	kernelVariables.currentRunningTID = nextTID;
 	kernelVariables.tcbList[nextTID].state = RUNNING;
 	return;
+}
+
+void save_new_psp(void){
+	kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high;
 }
 
 int createTask(TCB* task) {

@@ -34,7 +34,6 @@ void print_continuously(void);
  * @param: Size of stack to allocate
  */
 uint32_t* Get_Thread_Stack(unsigned int stack_size);
-uint32_t* Get_Thread_Stack_OLD(unsigned int threadNum);
 
 /*
  * brief: Kills a running thread by clearing the PendSV interrupt
@@ -67,5 +66,10 @@ int osTaskInfo(task_t TID, TCB* task_copy);
 void osYield(void);
 
 int osKernelStart(void);
+
+/*
+ * brief: Function to be ran by null task. Continuously calls osYield to yield
+ */
+void Null_Task_Function(void);
 
 #endif /* INC_K_TASK_H_ */
