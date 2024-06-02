@@ -13,12 +13,12 @@
 
 // ------- Globals --------
 uint32_t* p_threadStacks[MAX_TASKS];
-Kernel_Variables kernelVariables;
+Kernel_Variables kernelVariables = {.currentRunningTID = -1,
+									.kernelInitRan = 0,
+									.numAvaliableTasks = 0,
+									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE};
 
 void osKernelInit(void) {
-	kernelVariables.numAvaliableTasks = 0;
-	kernelVariables.currentRunningTID = -1;
-	kernelVariables.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE;
 	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
 	return;
@@ -26,7 +26,7 @@ void osKernelInit(void) {
 
 void osInitTCBArray() {
 	// Initializing null task
-	kernelVariables.tcbList[0].ptask = &print_continuously;
+	kernelVariables.tcbList[0].ptask = (void*) &print_continuously;
 	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
 	kernelVariables.tcbList[0].tid = TID_NULL;
 	kernelVariables.tcbList[0].state = READY;

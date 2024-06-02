@@ -57,13 +57,17 @@ int SVC_Handler_Main( unsigned int *svc_args )
 }
 
 void contextSwitch(void) {
-	// Find next task to run
-	kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = __get_PSP();
+	if (kernelVariables.currentRunningTID != -1) {
+		// Find next task to run
+		kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = __get_PSP();
+		kernelVariables.tcbList[kernelVariables.currentRunningTID].state = READY;
+	}
 
 	int nextTID = Scheduler();
 	__set_PSP(kernelVariables.tcbList[nextTID].current_sp);
 
 	kernelVariables.currentRunningTID = nextTID;
+	kernelVariables.tcbList[nextTID].state = RUNNING;
 	return;
 }
 
