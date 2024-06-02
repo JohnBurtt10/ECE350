@@ -63,19 +63,19 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		}
 
 		// Check if current task exists
-		TCB task = kernelVariables.tcbList[current_TID];
+		TCB *task = &kernelVariables.tcbList[current_TID];
 
 		/* TODO: If there are no other tasks scheduled, execute null task*/
 
-		if(task.state == RUNNING){ // may be a redundant check
+		if(task->state == RUNNING){ // may be a redundant check
 			// Changing the state to DORMANT removes the task from the scheduler
-			task.state = DORMANT;
 			
 			// reset the exiting tasks stackpointer to the top of the stack to be reused
 			__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
 			// call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			__asm("isb");
+			task->state = DORMANT;
 			return RTX_OK;
 		}
 		return RTX_ERR;
@@ -91,8 +91,13 @@ void contextSwitch(void) {
 	if (kernelVariables.currentRunningTID != -1) {
 		// Find next task to run
 		kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = __get_PSP();
-		kernelVariables.tcbList[kernelVariables.currentRunningTID].state = READY;
+
+		// Update current task to READY if yielding from task, if exiting, state remains dormant
+		if (kernelVariables.tcbList[kernelVariables.currentRunningTID].state == RUNNING){
+			kernelVariables.tcbList[kernelVariables.currentRunningTID].state = READY;
+		}
 	}
+	
 
 	int nextTID = Scheduler();
 	__set_PSP(kernelVariables.tcbList[nextTID].current_sp);

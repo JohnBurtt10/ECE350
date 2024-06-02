@@ -106,11 +106,25 @@ void anakin(void){
 
 	osYield();
 
-	DEBUG_PRINTF("  *Gets chopped in half and dies like a loser*\r\n");
+	DEBUG_PRINTF("  *Gets chopped in half and almost dies like a loser*\r\n");
+
+	osTaskExit();
 }
 
 void obiwan(void) {
 	DEBUG_PRINTF("Hello, there!\r\n");
+
+	osTaskExit();
+}
+
+
+void luke(void){
+	DEBUG_PRINTF("Dad?\r\n");
+
+	osYield();
+
+	DEBUG_PRINTF("Oh\r\n");
+
 	osYield();
 }
 

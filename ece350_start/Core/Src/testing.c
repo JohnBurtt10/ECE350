@@ -45,13 +45,16 @@ int main(void)
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should fail
 	osKernelInit();
 
-	TCB test1, test2;
+	TCB test1, test2, test3;
 	Init_Task(&test1);
 	Init_Task_2(&test2);
+	Init_Task_3(&test3);
 	int result1 = osCreateTask(&test1);
 	int result2 = osCreateTask(&test2);
+	int result3 = osCreateTask(&test3);
 	printf("osCreateTask: %d\r\n", result1);
 	printf("osCreateTask: %d\r\n", result2);
+	printf("osCreateTask:  %d\r\n", result3);
 
 
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should succeed
@@ -106,6 +109,16 @@ void Init_Task(TCB* task){
 
 void Init_Task_2(TCB* task){
 	task->ptask = &obiwan;
+	task->stack_high = (U32)Get_Thread_Stack(0x200);
+	task->state = READY;
+	task->stack_size = 0x200;
+	task->current_sp = task->stack_high;
+	task->original_stack_size = 0x200;
+	task->args = NULL;
+}
+
+void Init_Task_3(TCB* task){
+	task->ptask = &luke;
 	task->stack_high = (U32)Get_Thread_Stack(0x200);
 	task->state = READY;
 	task->stack_size = 0x200;

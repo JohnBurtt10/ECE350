@@ -33,6 +33,8 @@ void anakin(void);
  */
 void obiwan(void);
 
+void luke(void);
+
 /*
  * @brief: Find space to create a new thread stack
  * @retval: returns stack_high address of new stack on success. NULL on failure due to not enough memory
