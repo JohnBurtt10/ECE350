@@ -41,6 +41,15 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
     	break;
+	case OS_TASK_EXIT:
+		DEBUG_PRINTF("TASK EXIT\r\n");
+
+		// reset the tasks stackpointer to the top of the stack to b reused
+		__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+		// call the scheduler to yield and run the next task
+		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+		__asm("isb");
+		break;
     default:    /* unknown SVC */
       break;
   }

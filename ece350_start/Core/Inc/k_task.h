@@ -65,6 +65,7 @@ int osTaskInfo(task_t TID, TCB* task_copy);
  * 3) Pop registers from new task stack and update registers on microcontroller.
  */
 void osYield(void);
+
 int osTaskExit(void);
 
 #endif /* INC_K_TASK_H_ */

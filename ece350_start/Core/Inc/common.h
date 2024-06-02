@@ -27,7 +27,7 @@
 #define TEST_ERROR 0
 #define OS_CREATE_TASK 1
 #define OS_YIELD 2
-#define EXIT 3
+#define OS_TASK_EXIT 3
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
