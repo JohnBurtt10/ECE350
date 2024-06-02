@@ -58,7 +58,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			// Changing the state to DORMANT removes the task from the scheduler
 			task.state = DORMANT;
 			
-			// reset the tasks stackpointer to the top of the stack to b reused
+			// reset the exiting tasks stackpointer to the top of the stack to be reused
 			__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
 			// call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;

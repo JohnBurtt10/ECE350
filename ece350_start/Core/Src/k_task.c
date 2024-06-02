@@ -118,9 +118,3 @@ int osTaskExit(void){
 	
 	return taskExitStatus;
 }
-
-// decrement dormant
-/*
- * push current and pop next from registers
- *
- */
