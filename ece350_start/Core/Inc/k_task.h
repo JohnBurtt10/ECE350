@@ -26,7 +26,12 @@ uint32_t* Create_Thread();
 /*
  * brief: Simple function used to test thread functionality
  */
-void print_continuously(void);
+void anakin(void);
+
+/*
+ * brief: Simple function used to test thread functionality
+ */
+void obiwan(void);
 
 /*
  * @brief: Find space to create a new thread stack

@@ -101,17 +101,24 @@ uint32_t* Get_Thread_Stack(unsigned int stack_size){
 	return (uint32_t*) newStackStart;
 }
 
-void print_continuously(void){
-	while(1){
-		printf("Thread2222\r\n");
-	}
+void anakin(void){
+	DEBUG_PRINTF("  You underestimate my power Obi-Wan\r\n");
+
+	osYield();
+
+	DEBUG_PRINTF("  *Gets chopped in half and dies like a loser*\r\n");
+}
+
+void obiwan(void) {
+	DEBUG_PRINTF("Hello, there!\r\n");
+	osYield();
 }
 
 void Null_Task_Function(void) {
-	while (1) {
-		DEBUG_PRINTF(" IN NULL TASK. ATTEMPTING YIELD\r\n");
-		osYield();
-	}
+	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
+
+	while (1);
+
 	return;
 }
 

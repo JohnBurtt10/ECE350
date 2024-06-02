@@ -22,6 +22,7 @@
 #ifdef DEBUG_ENABLE
 void Test_Generate_Thread_Stack();
 void Init_Task(TCB* task);
+void Init_Task_2(TCB* task);
 void Test_osCreateTask(); // Will fill all tcb's with the same tcb.
 void Print_All_TCBs();
 
@@ -44,10 +45,14 @@ int main(void)
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should fail
 	osKernelInit();
 
-	TCB test;
-	Init_Task(&test);
-	int result = osCreateTask(&test);
-	printf("osCreateTask: %d\r\n", result);
+	TCB test1, test2;
+	Init_Task(&test1);
+	Init_Task_2(&test2);
+	int result1 = osCreateTask(&test1);
+	int result2 = osCreateTask(&test2);
+	printf("osCreateTask: %d\r\n", result1);
+	printf("osCreateTask: %d\r\n", result2);
+
 
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should succeed
 
@@ -91,6 +96,16 @@ void Test_Generate_Thread_Stack(){
 
 void Init_Task(TCB* task){
 	task->ptask = &print_continuously;
+	task->stack_high = (U32)Get_Thread_Stack(0x200);
+	task->state = READY;
+	task->stack_size = 0x200;
+	task->current_sp = task->stack_high;
+	task->original_stack_size = 0x200;
+	task->args = NULL;
+}
+
+void Init_Task_2(TCB* task){
+	task->ptask = &print_continuously_2;
 	task->stack_high = (U32)Get_Thread_Stack(0x200);
 	task->state = READY;
 	task->stack_size = 0x200;
