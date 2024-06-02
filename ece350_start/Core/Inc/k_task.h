@@ -66,4 +66,6 @@ int osTaskInfo(task_t TID, TCB* task_copy);
  */
 void osYield(void);
 
+int osKernelStart(void);
+
 #endif /* INC_K_TASK_H_ */

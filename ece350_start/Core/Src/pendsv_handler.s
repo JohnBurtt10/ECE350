@@ -7,9 +7,25 @@
 .thumb_func
 PendSV_Handler:
 	.global contextSwitch
-	// Storing occuring here.
+	TST lr, #4
+	PUSH {LR}
+	ITE EQ
+	MRSEQ r0, MSP
+	MRSNE r0, PSP
+
+	POP {LR}
+	TST lr, #4
+	BEQ switch
+
+	// Store current running task state.
+	MRS r0, PSP
+	STMDB r0!, {r4-r11}
+	MRS r0, PSP
+
+switch:
 	BL contextSwitch
-	// Restoring below
+
+	// Run next task
 	MRS r0, PSP
 	LDMIA r0!, {r4-r11}
 	MSR PSP, r0

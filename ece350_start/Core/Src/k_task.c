@@ -28,6 +28,17 @@ void osYield(void) {
 	TRIGGER_SVC(OS_YIELD);
 }
 
+int osKernelStart(void) {
+	int output;
+	TRIGGER_SVC(OS_KERNEL_START);
+	__asm("MOV %0, R0": "=r"(output));
+
+	if (output == RTX_OK){
+		TRIGGER_SVC(OS_YIELD);
+	}
+	return output;
+}
+
 int osTaskInfo(task_t TID, TCB* task_copy) {
 	if (task_copy == NULL){
 		return RTX_ERR;

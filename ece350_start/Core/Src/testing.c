@@ -41,7 +41,9 @@ int main(void)
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	printf("IN DEBUGGING MODE. TO DISABLE GO TO: common.h AND COMMENT OUT #define DEBUG_ENABLE\r\n");
+	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should fail
 	osKernelInit();
+	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should succeed
 
 	// Main stack pointer
 	// 0x0 pointer is a pointer that points to a pointer storing vector table.
@@ -56,6 +58,8 @@ int main(void)
 	int result = osCreateTask(&test);
 	printf("osCreateTask: %d\r\n", result);
 
+	kernelVariables.currentRunningTID = 1;
+	osYield();
 //	Scheduler();
 
 	while (1)
@@ -84,9 +88,9 @@ void Test_Generate_Thread_Stack(){
 }
 
 void Init_Task(TCB* task){
-	task->ptask = 0x1234;
-	task->stack_high = 0x0;
-	task->state = DORMANT;
+	task->ptask = &print_continuously;
+	task->stack_high = (U32)Get_Thread_Stack(0x200);
+	task->state = READY;
 	task->stack_size = 0x200;
 	task->current_sp = task->stack_high;
 	task->original_stack_size = 0x200;

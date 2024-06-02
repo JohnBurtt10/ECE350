@@ -34,26 +34,36 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	return createTask((TCB*)svc_args[0]);
     	break;
     case OS_YIELD:
-//    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
-//
-//    	// Save current task state.
+    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
+    	// Save current task state.
     	__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp);
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
+    	break;
+    case OS_KERNEL_START:
+    	if (kernelVariables.currentRunningTID != -1 || kernelVariables.kernelInitRan != 1){
+    		DEBUG_PRINTF(" The kernel has not been initialized\r\n");
+    		return RTX_ERR;
+    	}
+
+    	// No error, then run first avaliable task
+    	return RTX_OK;
     	break;
     default:    /* unknown SVC */
       break;
   }
 
-  return 0;
+  return RTX_ERR;
 }
 
 void contextSwitch(void) {
 	// Find next task to run
+	kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = __get_PSP();
+
 	int nextTID = Scheduler();
 	__set_PSP(kernelVariables.tcbList[nextTID].current_sp);
-	// Begin to grab next task and pop from its stack to resume state.
 
+	kernelVariables.currentRunningTID = nextTID;
 	return;
 }
 
