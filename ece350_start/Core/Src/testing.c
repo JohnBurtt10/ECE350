@@ -95,7 +95,7 @@ void Test_Generate_Thread_Stack(){
 }
 
 void Init_Task(TCB* task){
-	task->ptask = &print_continuously;
+	task->ptask = &anakin;
 	task->stack_high = (U32)Get_Thread_Stack(0x200);
 	task->state = READY;
 	task->stack_size = 0x200;
@@ -105,7 +105,7 @@ void Init_Task(TCB* task){
 }
 
 void Init_Task_2(TCB* task){
-	task->ptask = &print_continuously_2;
+	task->ptask = &obiwan;
 	task->stack_high = (U32)Get_Thread_Stack(0x200);
 	task->state = READY;
 	task->stack_size = 0x200;
