@@ -15,7 +15,7 @@ int createTask(TCB* task);
 /*
  * brief: Initializes thread stack with given function call and arbitrary values.
  */
-void Init_Thread_Stack(uint32_t* stack_pointer, void (*callback)(void* args), int TID);
+void Init_Thread_Stack(U32* stack_pointer, void (*callback)(void* args), int TID);
 
 void contextSwitch(void);
 

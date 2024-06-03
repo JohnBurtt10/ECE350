@@ -29,6 +29,7 @@
 #define OS_YIELD 2
 #define OS_KERNEL_START 3
 #define OS_TASK_EXIT 4
+#define OS_TASK_INFO 5
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
@@ -69,7 +70,6 @@ typedef struct task_control_block{
 	U32 current_sp; // top of stack
 	U32 original_stack_size; // Size of stack when TCB was initialized/created
 	void* args; // Arguments for function
-	U8 isKernelInit;
 } TCB;
 
 typedef struct kernel_variables {

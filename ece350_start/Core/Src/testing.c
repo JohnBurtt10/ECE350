@@ -23,6 +23,7 @@
 void Test_Generate_Thread_Stack();
 void Init_Task(TCB* task);
 void Init_Task_2(TCB* task);
+void Init_Task_3(TCB* task);
 void Test_osCreateTask(); // Will fill all tcb's with the same tcb.
 void Print_All_TCBs();
 
@@ -45,7 +46,7 @@ int main(void)
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should fail
 	osKernelInit();
 
-	TCB test1, test2, test3;
+	TCB test1, test2, test3, test4;
 	Init_Task(&test1);
 	Init_Task_2(&test2);
 	Init_Task_3(&test3);
@@ -56,6 +57,8 @@ int main(void)
 	printf("osCreateTask: %d\r\n", result2);
 	printf("osCreateTask:  %d\r\n", result3);
 
+	printf("test4 address: %p\r\n", &test4);
+	printf("osTaskInfo(3, &task4): %d\r\n", osTaskInfo(3, &test4));
 
 	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should succeed
 
@@ -68,7 +71,6 @@ int main(void)
 //	Test_Generate_Thread_Stack();
 //	Test_osCreateTask();
 
-	kernelVariables.currentRunningTID = 1;
 	osYield();
 //	Scheduler();
 
@@ -97,8 +99,35 @@ void Test_Generate_Thread_Stack(){
 	osInitTCBArray(); // Reset TCBs
 }
 
+void anakin(void){
+	DEBUG_PRINTF("  You underestimate my power Obi-Wan\r\n");
+
+	osYield();
+
+	DEBUG_PRINTF("  *Gets chopped in half and almost dies like a loser*\r\n");
+
+	osTaskExit();
+}
+
+void obiwan(void) {
+	DEBUG_PRINTF("Hello, there!\r\n");
+
+	osTaskExit();
+}
+
+
+void luke(void){
+	DEBUG_PRINTF("Dad?\r\n");
+
+	osYield();
+
+	DEBUG_PRINTF("Oh\r\n");
+
+	osYield();
+}
+
 void Init_Task(TCB* task){
-	task->ptask = &anakin;
+	task->ptask = (void*)&anakin;
 	task->stack_high = (U32)Get_Thread_Stack(0x200);
 	task->state = READY;
 	task->stack_size = 0x200;
@@ -108,7 +137,7 @@ void Init_Task(TCB* task){
 }
 
 void Init_Task_2(TCB* task){
-	task->ptask = &obiwan;
+	task->ptask = (void*)&obiwan;
 	task->stack_high = (U32)Get_Thread_Stack(0x200);
 	task->state = READY;
 	task->stack_size = 0x200;
@@ -118,7 +147,7 @@ void Init_Task_2(TCB* task){
 }
 
 void Init_Task_3(TCB* task){
-	task->ptask = &luke;
+	task->ptask = (void*)&luke;
 	task->stack_high = (U32)Get_Thread_Stack(0x200);
 	task->state = READY;
 	task->stack_size = 0x200;

@@ -24,18 +24,6 @@ extern uint32_t* p_threadStacks[]; // Array to store pointers to the top of each
 uint32_t* Create_Thread();
 
 /*
- * brief: Simple function used to test thread functionality
- */
-void anakin(void);
-
-/*
- * brief: Simple function used to test thread functionality
- */
-void obiwan(void);
-
-void luke(void);
-
-/*
  * @brief: Find space to create a new thread stack
  * @retval: returns stack_high address of new stack on success. NULL on failure due to not enough memory
  * @param: Size of stack to allocate
