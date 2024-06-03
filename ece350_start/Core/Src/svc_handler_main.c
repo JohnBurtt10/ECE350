@@ -77,10 +77,35 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			task->state = DORMANT;
 			return RTX_OK;
 		}
-	return RTX_ERR;
+		return RTX_ERR;
         break;
+	case OS_TASK_INFO:
+		DEBUG_PRINTF(" OS_TASK_INFO CALLED\r\n");
+		int TID = (int) svc_args[0];
+		TCB* task_copy = (TCB*) svc_args[1];
+		if (TID >= 0 && TID < MAX_TASKS){
+			TCB task = kernelVariables.tcbList[TID];
+
+			// If in created state, then there is just garbage. return error
+			if(task.state == CREATED){
+				return RTX_ERR;
+			}
+
+			task_copy->args = task.args;
+			task_copy->current_sp = task.current_sp;
+			task_copy->ptask = task.ptask;
+			task_copy->stack_high = task.stack_high;
+			task_copy->stack_size = task.original_stack_size;
+			task_copy->state = task.state;
+			task_copy->tid = task.tid;
+
+			return RTX_OK;
+		}
+
+		return RTX_ERR;
+		break;
     default:    /* unknown SVC */
-      break;
+    	break;
   }
 
   return RTX_ERR;
@@ -194,7 +219,7 @@ int createTask(TCB* task) {
 	return RTX_ERR;
 }
 
-void Init_Thread_Stack(uint32_t* stack_pointer, void (*callback)(void* args), int TID){
+void Init_Thread_Stack(U32* stack_pointer, void (*callback)(void* args), int TID){
 	DEBUG_PRINTF(" CURRENT_SP ADDRESS: %p\r\n", stack_pointer);
 	*(--stack_pointer) = 1 << 24; // xPSR register, setting chip to "Thumb" mode
 	*(--stack_pointer) = (uint32_t)callback; // PC Register storing next instruction

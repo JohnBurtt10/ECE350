@@ -44,26 +44,10 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
 		return RTX_ERR;
 	}
 
-	if (TID >= 0 && TID < MAX_TASKS){
-		TCB task = kernelVariables.tcbList[TID];
-
-		// Check that task exists and resources have already been allocated (not in CREATED state)
-		if(task.state == DORMANT || task.state == READY || task.state == RUNNING){
-			return RTX_ERR;
-		}
-
-		task_copy->args = task.args;
-		task_copy->current_sp = task.current_sp;
-		task_copy->ptask = task.ptask;
-		task_copy->stack_high = task.stack_high;
-		task_copy->stack_size = task.original_stack_size;
-		task_copy->state = task.state;
-		task_copy->tid = task.tid;
-
-		return RTX_OK;
-	}
-
-	return RTX_ERR;
+	int output;
+	TRIGGER_SVC(OS_TASK_INFO);
+	__asm("MOV %0, R0": "=r"(output));
+	return output;
 }
 
 /**
@@ -73,7 +57,7 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
 task_t getTID (void) {
 	// If the kernel has not started, no task is running
 	if(kernelVariables.currentRunningTID == -1){
-		return 0;
+		return RTX_ERR;
 	}
 
 	return kernelVariables.currentRunningTID;
@@ -99,33 +83,6 @@ uint32_t* Get_Thread_Stack(unsigned int stack_size){
 
 	DEBUG_PRINTF("Found starting address for thread stack: %p. Size: %d\r\n", (uint32_t*)newStackStart, stack_size);
 	return (uint32_t*) newStackStart;
-}
-
-void anakin(void){
-	DEBUG_PRINTF("  You underestimate my power Obi-Wan\r\n");
-
-	osYield();
-
-	DEBUG_PRINTF("  *Gets chopped in half and almost dies like a loser*\r\n");
-
-	osTaskExit();
-}
-
-void obiwan(void) {
-	DEBUG_PRINTF("Hello, there!\r\n");
-
-	osTaskExit();
-}
-
-
-void luke(void){
-	DEBUG_PRINTF("Dad?\r\n");
-
-	osYield();
-
-	DEBUG_PRINTF("Oh\r\n");
-
-	osYield();
 }
 
 void Null_Task_Function(void) {
