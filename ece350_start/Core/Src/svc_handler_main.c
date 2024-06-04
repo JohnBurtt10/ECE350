@@ -104,6 +104,13 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
 		return RTX_ERR;
 		break;
+	case OS_GET_TID:
+		if(kernelVariables.currentRunningTID == -1){
+			return RTX_ERR;
+		}
+
+		return kernelVariables.currentRunningTID;
+		break;
     default:    /* unknown SVC */
     	break;
   }

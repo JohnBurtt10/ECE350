@@ -30,6 +30,7 @@
 #define OS_KERNEL_START 3
 #define OS_TASK_EXIT 4
 #define OS_TASK_INFO 5
+#define OS_GET_TID 6
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
