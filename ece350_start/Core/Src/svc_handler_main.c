@@ -35,6 +35,9 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	break;
     case OS_YIELD:
     	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
+    	if (kernelVariables.kernelStarted == 0) {
+    		break;
+    	}
     	// Save current task state.
 
 //    	// MIGHT NEED TO REMOVE __set_PSP AS IT OVERWRITES PSP AFTER INTERRUPT PUSHES REGISTERS TO PROCESS STACK
@@ -51,7 +54,8 @@ int SVC_Handler_Main( unsigned int *svc_args )
     		return RTX_ERR;
     	}
 
-    	// No error, then run first avaliable task
+    	// Return, then perform yield
+    	kernelVariables.kernelStarted = 1;
     	return RTX_OK;
     	break;
 	case OS_TASK_EXIT:
@@ -62,26 +66,28 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			return RTX_ERR;
 		}
 
-		// Check if current task exists
-		TCB *task = &kernelVariables.tcbList[current_TID];
-
-		if(task->state == RUNNING){ // may be a redundant check
+		if(kernelVariables.tcbList[current_TID].state == RUNNING){ // may be a redundant check
 			// reset the exiting tasks stackpointer to the top of the stack to be reused
 			__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
 			
+			// Changing the state to DORMANT removes the task from the scheduler
+			kernelVariables.tcbList[current_TID].state = DORMANT;
+			kernelVariables.numAvaliableTasks--;
+
 			// call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			__asm("isb");
 
-			// Changing the state to DORMANT removes the task from the scheduler
-			task->state = DORMANT;
-			kernelVariables.numAvaliableTasks--;
 			return RTX_OK;
 		}
 		return RTX_ERR;
         break;
 	case OS_TASK_INFO:
 		DEBUG_PRINTF(" OS_TASK_INFO CALLED\r\n");
+		if (kernelVariables.currentRunningTID == -1){
+			return RTX_ERR;
+		}
+
 		int TID = (int) svc_args[0];
 		TCB* task_copy = (TCB*) svc_args[1];
 		if (TID >= 0 && TID < MAX_TASKS){
@@ -146,7 +152,12 @@ void save_new_psp(void){
 int createTask(TCB* task) {
 	TCB* tcbs = kernelVariables.tcbList;
 
-	if (task->stack_size < MIN_THREAD_STACK_SIZE){
+	if (task == NULL) {
+		DEBUG_PRINTF(" Failed to create task. User passed in NULL task.\r\n");
+		return RTX_ERR;
+	}
+
+	if (task->stack_size < STACK_SIZE){
 		DEBUG_PRINTF(" Failed to create task. Stack size too small.\r\n");
 		return RTX_ERR;
 	}
@@ -172,7 +183,7 @@ int createTask(TCB* task) {
 	for (int i = 1; i < MAX_TASKS; i++) {
 		// Found terminated task. Check if we can fit the new TCB into it.
 		if (tcbs[i].state == DORMANT) {
-			if (tcbs[i].original_stack_size >= task->stack_size){
+			if (task->stack_size <= tcbs[i].original_stack_size){
 				if (tcbs[i].original_stack_size < TCBStackSmallest){
 					TCBStackSmallest = tcbs[i].original_stack_size;
 					TIDtoOverwrite = i;
@@ -197,6 +208,8 @@ int createTask(TCB* task) {
 		tcbs[TIDtoOverwrite].current_sp = tcbs[TIDtoOverwrite].stack_high;
 		tcbs[TIDtoOverwrite].stack_size = task->stack_size;
 		tcbs[TIDtoOverwrite].args = task->args;
+
+		task->tid = TIDtoOverwrite;
 		kernelVariables.numAvaliableTasks++;
 
 		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, task->ptask, TIDtoOverwrite);
@@ -222,8 +235,38 @@ int createTask(TCB* task) {
 		return RTX_OK;
 	}
 
+	// Failed to find any free tasks or dormant tasks that can fit the new task. Force that bitch in.
+	// We have to do this  (john jekel said so and I trust him with my life).
+	if(Force_Task_Into_Another(task)){
+		return RTX_OK;
+	}
+
 	// All free TCB's are currently in use or there is no TCB with enough space to accommodate new task.
 	DEBUG_PRINTF("Failed to create new task. All tasks are currently in use, or there is no TCB with enough space to accommodate new task\r\n");
+	return RTX_ERR;
+}
+
+int Force_Task_Into_Another(TCB* task) {
+	for (int i = 1; i < MAX_TASKS - 1; i++) {
+		TCB* currentTask = &kernelVariables.tcbList[i];
+		TCB nextTask = kernelVariables.tcbList[i+1];
+		if (currentTask->state == DORMANT && nextTask.state == DORMANT && currentTask->original_stack_size + nextTask.original_stack_size >= task->stack_size) {
+			currentTask->ptask = task->ptask;
+			currentTask->state = READY;
+			currentTask->stack_size = task->stack_size;
+			currentTask->current_sp = currentTask->stack_high;
+			currentTask->original_stack_size = task->stack_size;
+			currentTask->args = task->args;
+
+			kernelVariables.numAvaliableTasks++;
+			task->tid = i;
+
+			Init_Thread_Stack((U32*)currentTask->current_sp, task->ptask, i);
+
+			return RTX_OK;
+		}
+	}
+
 	return RTX_ERR;
 }
 

@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-#define DEBUG_ENABLE // Comment me out to disable debugging
+//#define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
@@ -37,7 +37,7 @@
 
 // ------ SUBJECT TO CHANGE ----------
 #define MAIN_STACK_SIZE 0x400 // 1024 bytes. This stores interrupts, setup, and os-specific stuff
-#define MIN_THREAD_STACK_SIZE 0x200 // 1024 bytes. Defined in prelab 1
+#define STACK_SIZE 0x200 // 1024 bytes. Defined in prelab 1
 
 #define TID_NULL 0 //predefined Task ID for the NULL task
 #define MAX_TASKS 16 //maximum number of tasks in the system including null task
@@ -79,6 +79,7 @@ typedef struct kernel_variables {
 	TCB tcbList[MAX_TASKS];
 	int currentRunningTID;
 	int kernelInitRan;
+	int kernelStarted;
 } Kernel_Variables;
 
 extern Kernel_Variables kernelVariables;
