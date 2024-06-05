@@ -24,7 +24,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
   * First argument (r0) is svc_args[0]
   */
   svc_number = ( ( char * )svc_args[ 6 ] )[ -2 ] ;
-  printf("System call number: %d\r\n", svc_number );
+  DEBUG_PRINTF("System call number: %d\r\n", svc_number );
   switch( svc_number )
   {
     case TEST_ERROR:  /* EnablePrivilegedMode */
@@ -37,11 +37,11 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
     	// Save current task state.
 
-    	// MIGHT NEED TO REMOVE __set_PSP AS IT OVERWRITES PSP AFTER INTERRUPT PUSHES REGISTERS TO PROCESS STACK
-    	// THEREFORE, PSP IS ALREADY UPDATED BY INTERRUIPT
-    	if (kernelVariables.currentRunningTID == -1) {
-    		__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
-    	}
+//    	// MIGHT NEED TO REMOVE __set_PSP AS IT OVERWRITES PSP AFTER INTERRUPT PUSHES REGISTERS TO PROCESS STACK
+//    	// THEREFORE, PSP IS ALREADY UPDATED BY INTERRUIPT
+//    	if (kernelVariables.currentRunningTID == -1) {
+//    		__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+//    	}
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
     	break;
@@ -75,6 +75,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
 			// Changing the state to DORMANT removes the task from the scheduler
 			task->state = DORMANT;
+			kernelVariables.numAvaliableTasks--;
 			return RTX_OK;
 		}
 		return RTX_ERR;
@@ -151,9 +152,9 @@ int createTask(TCB* task) {
 	}
 
 	if (task->ptask == NULL){
-			DEBUG_PRINTF(" Failed to create task. Missing pointer to function\r\n");
-			return RTX_ERR;
-		}
+		DEBUG_PRINTF(" Failed to create task. Missing pointer to function\r\n");
+		return RTX_ERR;
+	}
 
 	if (kernelVariables.numAvaliableTasks == MAX_TASKS){
 		DEBUG_PRINTF(" Failed to create task. Reached maximum allowed tasks\r\n");
@@ -161,9 +162,9 @@ int createTask(TCB* task) {
 	}
 
 	if (kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
-			DEBUG_PRINTF(" Failed to create task. Not enough memory\r\n");
-			return RTX_ERR;
-		}
+		DEBUG_PRINTF(" Failed to create task. Not enough memory\r\n");
+		return RTX_ERR;
+	}
 
 	int TIDtoOverwrite = -1;
 	int TIDofEmptyTCB = MAX_SIGNED_INT_VALUE;
