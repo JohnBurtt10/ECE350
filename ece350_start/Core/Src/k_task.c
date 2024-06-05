@@ -64,7 +64,7 @@ task_t osGetTID (void) {
 uint32_t* Get_Thread_Stack(unsigned int stack_size){
 	// ARM Cortex architecture grows stack grows downwards (high address to low address)
 
-	if (stack_size < MIN_THREAD_STACK_SIZE){
+	if (stack_size < STACK_SIZE){
 		DEBUG_PRINTF("Failed to get starting address for thread stack due to stack size being too small\r\n");
 		return NULL;
 	}

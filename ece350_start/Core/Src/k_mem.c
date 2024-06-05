@@ -16,6 +16,7 @@ uint32_t* p_threadStacks[MAX_TASKS];
 Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 									.kernelInitRan = 0,
 									.numAvaliableTasks = 0,
+									.kernelStarted = 0,
 									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE};
 
 void osKernelInit(void) {
