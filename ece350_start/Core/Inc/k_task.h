@@ -69,4 +69,6 @@ int osKernelStart(void);
  */
 void Null_Task_Function(void);
 
+task_t osGetTID(void);
+
 #endif /* INC_K_TASK_H_ */

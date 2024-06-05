@@ -54,13 +54,11 @@ int osTaskInfo(task_t TID, TCB* task_copy) {
  * Returns the TID of a task, used by the user application.
  * Returns 0 if the Kernel has not started
 */
-task_t getTID (void) {
-	// If the kernel has not started, no task is running
-	if(kernelVariables.currentRunningTID == -1){
-		return RTX_ERR;
-	}
-
-	return kernelVariables.currentRunningTID;
+task_t osGetTID (void) {
+	task_t tid;
+	TRIGGER_SVC(OS_GET_TID);
+	__asm("MOV %0, R0": "=r"(tid));
+	return tid;
 }
 
 uint32_t* Get_Thread_Stack(unsigned int stack_size){
