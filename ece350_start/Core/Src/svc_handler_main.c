@@ -94,7 +94,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			TCB task = kernelVariables.tcbList[TID];
 
 			// If in created state, then there is just garbage. return error
-			if(task.state == CREATED){
+			if(task.state == CREATED || task.state == DORMANT){
 				return RTX_ERR;
 			}
 
