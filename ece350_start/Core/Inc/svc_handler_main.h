@@ -23,6 +23,4 @@ void save_new_psp(void);
 
 int SVC_Handler_Main( unsigned int *svc_args );
 
-int Force_Task_Into_Another(TCB* task);
-
 #endif /* INC_SVC_HANDLER_MAIN_H_ */
