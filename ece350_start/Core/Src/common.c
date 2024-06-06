@@ -16,6 +16,7 @@ uint32_t* Get_MSP_INIT_VAL(){
 
 unsigned int Get_Total_Memory_Used() {
 	unsigned int totalMem = MAIN_STACK_SIZE;
+
 	for (int i = 0; i < MAX_TASKS; i++){
 		totalMem += kernelVariables.tcbList[i].stack_size;
 	}
@@ -28,13 +29,14 @@ int Scheduler(void) {
 	// Start from current running tid and find next one to run
 	for (int i = kernelVariables.currentRunningTID + 1; i <= MAX_TASKS + kernelVariables.currentRunningTID; i++) {
 		int TID = i % MAX_TASKS;
-//		DEBUG_PRINTF(" CURRENT TID: %d\r\n", TID);
-		// Ignore null task.
+
+		// Ignore null task. Find a TID that is in the ready state.
 		if (kernelVariables.tcbList[TID].state == READY && TID != 0) {
 			DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TID);
 			return TID;
 		}
 	}
+	
 	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
 	return TIDTaskToRun;
 }

@@ -13,6 +13,7 @@ PendSV_Handler:
 	MRSEQ r0, MSP
 	MRSNE r0, PSP
 
+	// Checks if on MSP (task has not started running) or PSP
 	TST lr, #4
 	BEQ switch
 
@@ -20,14 +21,15 @@ PendSV_Handler:
 	STMDB r0!, {r4-r11}
 	MSR PSP, r0
 switch:
-	PUSH {LR} // Might not be needed.
+	PUSH {LR}
 	BL contextSwitch
 	POP {LR}
+	
 	// Run next task
 	MRS r0, PSP
 	LDMIA r0!, {r4-r11}
 	MSR PSP, r0
 	BL save_new_psp // Set current_sp back to stack_high as we should have popped all registers from stack after exiting interrupt
 
-	MOV LR, #0xFFFFFFFD // put magic number into LR register that indicates exit from interrupt and to use the PSP as the SP
+	MOV LR, #0xFFFFFFFD // Put magic number into LR register that indicates exit from interrupt and to use the PSP as the SP
 	BX LR // A branch to this "magic number" will restore 8 hardware-saved registers and jump to PC. (PSR, PC, LR, R12, R3, R2, R1, R0)

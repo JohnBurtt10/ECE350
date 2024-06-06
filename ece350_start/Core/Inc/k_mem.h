@@ -13,18 +13,14 @@
 #include "k_task.h"
 #include "svc_handler_main.h"
 
-//extern TCB* readyTCBs[MAX_TASKS];
-
-/*
- * @brief  initializes all global kernel-level data structures and other variables as required by our kernel
- * @param None
+/**
+ * @brief  Initializes all global kernel-level data structures and other variables as required by the kernel
  * @retval None
  */
 void osKernelInit(void);
 
-/*
+/**
  * @brief: Init TCB array that stores all stored TCBs.
- * @param None.
  * @retval None.
  */
 void osInitTCBArray();

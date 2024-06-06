@@ -23,6 +23,7 @@
 
 
 #define TRIGGER_SVC(X) __asm("SVC %0" : : "i" (X))
+
 // ----------- SVC CALLS -----------
 #define TEST_ERROR 0
 #define OS_CREATE_TASK 1
@@ -84,16 +85,19 @@ typedef struct kernel_variables {
 
 extern Kernel_Variables kernelVariables;
 
+/**
+ * @brief: Returns the MSP address
+ */
 uint32_t* Get_MSP_INIT_VAL();
 
-// Process Stack Pointer register (PSP) represents thread stack pointer
-uint32_t* Get_Process_Stack_PTR();
-
-// Checks how much of the whole stack is currently used
+/**
+ * @brief: Checks how much of the whole stack is currently used
+*/
 unsigned int Get_Total_Memory_Used();
 
-// Finds the next TCB to run and returns the TID
+/**
+ * @brief: Finds the next TCB to run and returns the TID
+*/
 int Scheduler(void);
-
 
 #endif /* INC_COMMON_H_ */

@@ -10,7 +10,6 @@
 //#include "common.h"
 //#include "k_task.h"
 //#include "k_mem.h"
-//#include "circular_queue.h"
 //#include <stdio.h> //You are permitted to use this library, but currently only printf is implemented. Anything else is up to you!
 //#include <stddef.h>
 //

@@ -13,36 +13,26 @@
 #include <stdint.h>
 #include "common.h"
 
-// ------ Globals ------
-extern uint32_t* p_threadStacks[]; // Array to store pointers to the top of each thread stack. (aka last value pushed to stack)
-// ------ End of Globals -------
-
-
-/*
- * brief: Creates a new thread stack. Returns pointer to top of stack.
+/**
+ * @brief: Creates a new thread stack. Returns pointer to top of stack.
  */
 uint32_t* Create_Thread();
 
-/*
+/**
  * @brief: Find space to create a new thread stack
  * @retval: returns stack_high address of new stack on success. NULL on failure due to not enough memory
  * @param: Size of stack to allocate
  */
 uint32_t* Get_Thread_Stack(unsigned int stack_size);
 
-/*
- * brief: Kills a running thread by clearing the PendSV interrupt
- */
-void Kill_Thread(void);
-
-/*
+/**
  * @brief: Create a new task and register it with the RTX if possible
  * @param: TCB of task to create.
  * @retval: RTX_OK on success, RTX_ERR on failure
  */
 int osCreateTask(TCB* task);
 
-/*
+/**
  * @brief: Retrieve the informaƟon from the TCB of the task with id TID, and fill the TCB pointed to by task_copy
  *   		with all of its fields, if a task with the given TID exists
  * @param: TID and pointer to a task to update.
@@ -50,7 +40,7 @@ int osCreateTask(TCB* task);
  */
 int osTaskInfo(task_t TID, TCB* task_copy);
 
-/* Make every os____ a svc call. osKernelStart should start a task by BX LR into it using pendSV. (set stack for null task)
+/** Make every os____ a svc call. osKernelStart should start a task by BX LR into it using pendSV. (set stack for null task)
  * @brief:  immediately halts the execution of one task, saves it contexts, runs the scheduler, and loads the context of the next task to run.
  * 1) When Yielding from current running task to new task, push old task context to thread stack
  * 		a) New tasks should have stack initalized with arbitary values done as prelab.
@@ -60,15 +50,27 @@ int osTaskInfo(task_t TID, TCB* task_copy);
  */
 void osYield(void);
 
+/**
+ * @brief: Causes a running task to exit and uses the scheduler to call the next task ready to run. 
+ * Resets the stack pointer to be reused and sets the task to DORMANT
+ * @retval: RTX_OK if called by a running task, else returns RTX_ERR
+*/
 int osTaskExit(void);
 
+/**
+ * @brief: Starts the first task by calling the scheduler. 
+*/
 int osKernelStart(void);
 
-/*
- * brief: Function to be ran by null task. Continuously calls osYield to yield
+/**
+ * @brief: Function to be ran by null task. Continuously calls osYield to yield
  */
 void Null_Task_Function(void);
 
+/**
+ * @brief: Returns the TID of a task, used by the user application. 
+ * Returns 0 if the Kernel has not started
+ */
 task_t osGetTID(void);
 
 #endif /* INC_K_TASK_H_ */
