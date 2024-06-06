@@ -12,7 +12,6 @@
 #include <stddef.h>
 
 // ------- Globals --------
-uint32_t* p_threadStacks[MAX_TASKS];
 Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 									.kernelInitRan = 0,
 									.numAvaliableTasks = 0,
@@ -38,6 +37,7 @@ void osInitTCBArray() {
 
 	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].stack_high, kernelVariables.tcbList[0].ptask, 0);
 
+	// Initialize each task 
 	for (int i = 1; i < MAX_TASKS; i++) {
 		kernelVariables.tcbList[i].ptask = NULL;
 		kernelVariables.tcbList[i].stack_high = 0x0;
@@ -48,6 +48,7 @@ void osInitTCBArray() {
 		kernelVariables.tcbList[i].original_stack_size = 0;
 		kernelVariables.tcbList[i].args = NULL;
 	}
+
 	return;
 }
 
