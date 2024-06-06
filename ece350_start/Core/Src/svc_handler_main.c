@@ -235,11 +235,6 @@ int createTask(TCB* task) {
 		return RTX_OK;
 	}
 
-	// Failed to find any free tasks or dormant tasks that can fit the new task. Force that bitch in.
-	// We have to do this  (john jekel said so and I trust him with my life).
-	if(Force_Task_Into_Another(task)){
-		return RTX_OK;
-	}
 
 	// All free TCB's are currently in use or there is no TCB with enough space to accommodate new task.
 	DEBUG_PRINTF("Failed to create new task. All tasks are currently in use, or there is no TCB with enough space to accommodate new task\r\n");
