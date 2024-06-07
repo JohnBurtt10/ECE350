@@ -86,9 +86,6 @@ int SVC_Handler_Main( unsigned int *svc_args )
         break;
 	case OS_TASK_INFO:
 		DEBUG_PRINTF(" OS_TASK_INFO CALLED\r\n");
-		if (kernelVariables.currentRunningTID == -1){
-			return RTX_ERR;
-		}
 
 		int TID = (int) svc_args[0];
 		TCB* task_copy = (TCB*) svc_args[1];
