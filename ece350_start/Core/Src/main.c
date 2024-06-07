@@ -1,10 +1,10 @@
 /**
  * @file    main.c
- * @brief   Autograder for ECE 350, Lab 1
- *
+ * @brief   Autograder for ECE 350
+ * 
  * @copyright Copyright (C) 2024 John Jekel and contributors
  * See the LICENSE file at the root of the project for licensing info.
- *
+ * 
  * Replace your `main.c` file with this and you're off to the races!
  *
 */
@@ -13,29 +13,34 @@
  * Constants/Defines
  * --------------------------------------------------------------------------------------------- */
 
+//Change this to the lab you want to test for
+#define LAB_NUMBER 1
+//#define LAB_NUMBER 2
+//#define LAB_NUMBER 3
+
 #define NUM_TEST_FUNCTIONS 12
 
 //X macros are magical! :)
-//Order: function name, stack size, description string, author string
+//Order: function name, stack size, minimum lab number required, description string, author string
 #define TEST_FUNCTIONS \
-    X(sanity,                       STACK_SIZE,     "Basic sanity test",                                            "JZJ") \
-    X(eternalprintf,                STACK_SIZE,     "Group 13's first testcase. No idea why that's the name...",    "JZJ") \
-    X(reject_bad_tcbs,              STACK_SIZE,     "You shouldn't create tasks from bad TCBs, it's not healthy!",  "JZJ") \
-    X(stack_reuse,                  STACK_SIZE,     "Basic stack reuse test",                                       "JZJ") \
-    X(square_batman,                STACK_SIZE,     "Round robin test",                                             "JZJ") \
-    X(odds_are_stacked_against_you, STACK_SIZE,     "Stack integrity test across osYield()",                        "JZJ") \
-    X(i_prefer_latches,             STACK_SIZE,     "Register integrity test across osYield()",                     "JZJ") \
-    X(tid_limits,                   STACK_SIZE,     "Maximum number of TIDs test",                                  "JZJ") \
-    X(tid_uniqueness,               STACK_SIZE,     "Ensure the same TID isn't used for two tasks",                 "JZJ") \
-    X(reincarnation,                STACK_SIZE,     "A task whose last act is to recreate itself",                  "JZJ") \
-    X(insanity,                     0x400,          "This is a tough one, but you can do it!",                      "JZJ") \
-    X(greedy,                       STACK_SIZE,     "Stack exaustion test. This test should come last.",            "JZJ")
+    X(sanity,                       STACK_SIZE, 1,  "Basic sanity test",                                            "JZJ") \
+    X(eternalprintf,                STACK_SIZE, 1,  "Group 13's first testcase. No idea why that's the name...",    "JZJ") \
+    X(reject_bad_tcbs,              STACK_SIZE, 1,  "You shouldn't create tasks from bad TCBs, it's not healthy!",  "JZJ") \
+    X(stack_reuse,                  STACK_SIZE, 1,  "Basic stack reuse test",                                       "JZJ") \
+    X(square_batman,                STACK_SIZE, 1,  "Round robin test",                                             "JZJ") \
+    X(odds_are_stacked_against_you, STACK_SIZE, 1,  "Stack integrity test across osYield()",                        "JZJ") \
+    X(i_prefer_latches,             STACK_SIZE, 1,  "Register integrity test across osYield()",                     "JZJ") \
+    X(tid_limits,                   STACK_SIZE, 1,  "Maximum number of TIDs test",                                  "JZJ") \
+    X(tid_uniqueness,               STACK_SIZE, 1,  "Ensure the same TID isn't used for two tasks",                 "JZJ") \
+    X(reincarnation,                STACK_SIZE, 1,  "A task whose last act is to recreate itself",                  "JZJ") \
+    X(insanity,                     0x400,      1,  "This is a tough one, but you can do it!",                      "JZJ") \
+    X(greedy,                       STACK_SIZE, 1,  "Stack exaustion test. This test should come last.",            "JZJ")
 //TODO We can always use more testcases!
 
 //Bonus tests (not required to support these)!
 //X(task_wrapper_test,            STACK_SIZE,     "What happens if a task's function returns?",                   "JZJ")
 
-#define NUM_PRIVILEGED_TESTS 13
+#define NUM_PRIVILEGED_TESTS 18
 
 #define NUM_SIDEKICKS   5
 #define EVIL_ROBIN      NUM_SIDEKICKS / 2
@@ -105,6 +110,7 @@ typedef struct {
     void              (*ptr)(void* args);
     const char* const   name;
     uint16_t            stack_size;
+    uint8_t             min_labn;
     const char* const   description;
     const char* const   author;
 } test_function_info_s;
@@ -130,7 +136,7 @@ static uint32_t mandelbrot_iterations(float creal, float cimag);
 static void     mandelbrot_forever(void);
 
 //Test function definitions
-#define X(name, stack_size, desc, author) static void name(void*);
+#define X(name, stack_size, min_labn, desc, author) static void name(void*);
 TEST_FUNCTIONS
 #undef X
 
@@ -155,7 +161,7 @@ static const test_function_info_s test_functions[NUM_TEST_FUNCTIONS] = {
     //These should set function_complete to true when they finish so we can move onto the next one
     //This synchronization mechanism works only if there's one test function running at once and
     //they only write true (while the test_function_manager reads it/writes false)
-#define X(name, stack_size, desc, author) {name, #name, stack_size, desc, author},
+#define X(name, stack_size, min_labn, desc, author) {name, #name, stack_size, min_labn, desc, author},
     TEST_FUNCTIONS
 #undef X
 };
@@ -165,7 +171,8 @@ static const test_function_info_s test_functions[NUM_TEST_FUNCTIONS] = {
 //Autograder state
 static volatile bool function_complete  = false;//Causes things to move onto the next test
 static volatile bool function_status    = false;//False if failed, true if passed
-static volatile size_t num_passed = 0;//Number of tests passed
+static volatile size_t num_passed  = 0;//Number of tests passed
+static volatile size_t num_skipped = 0;//Number of tests skipped
 
 //Used by spinner() and friends
 static volatile size_t  spin_count = 0;
@@ -188,6 +195,7 @@ int main(void) {
 
     //Logo!
     printf("%s", LOGO);//Corresponds to Lab 1 evaluation outline #0
+    wprintf("Testing for Lab \x1b[96m%d\r\n", LAB_NUMBER);
     wprintf("Note that a base level of functionality is required in order to run the autograder");
     wprintf("to completion without crashing. Even if you can't get that far right away,");
     wprintf("as you make progress you'll get further and further through the autograder");
@@ -236,7 +244,7 @@ int main(void) {
 
     //Privileged test #6
     bool task_info_passed = true;
-    for (int ii = 0; ii < MAX_TASKS; ++ii) {
+    for (task_t ii = 0; ii < MAX_TASKS; ++ii) {
         TCB task_info;
         memset(&task_info, 0, sizeof(TCB));
         if (osTaskInfo((task_t)ii, &task_info) != RTX_ERR) {
@@ -258,16 +266,55 @@ int main(void) {
         ++num_passed;
     }
 
+    //Privileged test #7
+#if LAB_NUMBER >= 2
+    if (k_mem_alloc(1) != NULL) {
+        rprintf("    k_mem_alloc() should fail before k_mem_init()!");
+    } else {
+        gprintf("    k_mem_alloc() is behaving as expected before k_mem_init()!");
+        ++num_passed;
+    }
+#else
+    bprintf("    Skipping k_mem_alloc() test since it's not required for Lab 1...");
+    ++num_skipped;
+#endif
+
+    //Privileged test #8
+#if LAB_NUMBER >= 2
+    if (k_mem_init() == RTX_OK) {
+        rprintf("    k_mem_init() should fail before kernel init!");
+    } else {
+        gprintf("    k_mem_init() is behaving as expected before the kernel starts!");
+        ++num_passed;
+    }
+#else
+    bprintf("    Skipping k_mem_init() test since it's not required for Lab 1...");
+    ++num_skipped;
+#endif
+
+    //Privileged test #9
+#if LAB_NUMBER >= 2
+    if (k_mem_alloc(1) != NULL) {
+        rprintf("    k_mem_alloc() should fail before (a successful) k_mem_init()!");
+    } else {
+        gprintf("    k_mem_alloc() is behaving as expected before k_mem_init()!");
+        ++num_passed;
+    }
+#else
+    bprintf("    Skipping another k_mem_alloc() test since it's not required for Lab 1...");
+    ++num_skipped;
+#endif
+    
     //TODO more tests pre-init
 
-    //Privileged test #7
+    //Privileged test #10
     wprintf("Initializing the kernel...");
     osKernelInit();//Corresponds to Lab 1 evaluation outline #0
     ++num_passed;
     gprintf("Alrighty, the kernel is initialized!\x1b[0m\x1b[1m Let's see how you're doing so far...");
     print_score_so_far();
-
-    //Privileged test #8
+    
+    //Privileged test #11
     if (osGetTID() != 0) {
         rprintf("    osGetTID() should return 0 when called from a privileged context!");
     } else {
@@ -275,7 +322,7 @@ int main(void) {
         ++num_passed;
     }
 
-    //Privileged test #9
+    //Privileged test #12
     if (osTaskExit() != RTX_ERR) {
         rprintf("    osTaskExit() should return RTX_ERR when called from a privileged context!");
     } else {
@@ -283,17 +330,29 @@ int main(void) {
         ++num_passed;
     }
 
-    //Privileged test #10
+    //Privileged test #13
     osYield();
     ++num_passed;
     gprintf("    You survived ANOTHER osYield before the kernel started!");
 
-    //Privileged test #11
+    //Privileged test #14
     task_info_passed = true;
-    for (int ii = 0; ii < MAX_TASKS; ++ii) {
+    for (task_t ii = 0; ii < MAX_TASKS; ++ii) {
         TCB task_info;
         memset(&task_info, 0, sizeof(TCB));
         if (osTaskInfo((task_t)ii, &task_info) != RTX_ERR) {
+            if (ii == TID_NULL) {//NULL task special case, see Piazza #101
+                if (!task_info.ptask) {
+                    yprintf("    (osTaskInfo() reporting NULL ptask for the NULL task, maybe this is bad?)");
+                }
+
+                if (task_info.stack_size < STACK_SIZE) {
+                    yprintf("    (osTaskInfo() weird stack size for the NULL task, maybe this is bad?)");
+                }
+
+                continue;
+            }
+
             rprintf("    osTaskInfo() should return RTX_ERR since no tasks exist yet!");
             task_info_passed = false;
             break;
@@ -312,7 +371,7 @@ int main(void) {
         ++num_passed;
     }
 
-    //Privileged test #12
+    //Privileged test #15
     TCB test_function_manager_task;
     memset(&test_function_manager_task, 0, sizeof(TCB));
     test_function_manager_task.ptask      = test_function_manager;
@@ -328,12 +387,24 @@ int main(void) {
         ++num_passed;
     }
 
-    //Privileged test #13
+    //Privileged test #16
     task_info_passed = true;
     for (task_t ii = 0; ii < MAX_TASKS; ++ii) {
         TCB task_info;
         memset(&task_info, 0, sizeof(TCB));
         if (osTaskInfo(ii, &task_info) != RTX_ERR) {
+            if (ii == TID_NULL) {//NULL task special case, see Piazza #101
+                if (!task_info.ptask) {
+                    yprintf("    (osTaskInfo() reporting NULL ptask for the NULL task, maybe this is bad?)");
+                }
+
+                if (task_info.stack_size < STACK_SIZE) {
+                    yprintf("    (osTaskInfo() weird stack size for the NULL task, maybe this is bad?)");
+                }
+
+                continue;
+            }
+
             if (ii == test_function_manager_task.tid) {//The task we created
                 //Corresponds to Lab 1 evaluation outline #1
                 if (task_info.ptask != test_function_manager) {
@@ -369,6 +440,34 @@ int main(void) {
         ++num_passed;
     }
 
+    //Privileged test #17
+#if LAB_NUMBER >= 2
+    if (k_mem_init() != RTX_OK) {//FIXME what about testing if k_mem_init() works if called from a user task?
+        rprintf("    k_mem_init() failed!");
+    } else {
+        gprintf("    k_mem_init() was successful!");
+        ++num_passed;
+    }
+#else
+    bprintf("    Skipping k_mem_init() test since it's not required for Lab 1...");
+    ++num_skipped;
+#endif
+
+    //Privileged test #18
+#if LAB_NUMBER >= 2
+    if (k_mem_init() == RTX_OK) {
+        rprintf("    k_mem_init() should fail if called twice!");
+    } else {
+        gprintf("    k_mem_init() refused to be called twice as expected!");
+        ++num_passed;
+    }
+#else
+    bprintf("    Skipping another k_mem_init() test since it's not required for Lab 1...");
+    ++num_skipped;
+#endif
+
+    //TODO try to allocate memory in privileged mode!
+
     //And off we go!
     wprintf("Okay, I'm calling osKernelStart() now. This is a big step, don't get disheartened");
     wprintf("if it doesn't work on your first try, it certainly didn't for our group :)");
@@ -390,14 +489,18 @@ static void print_score_so_far(void) {
     uint32_t jekelscore = (uint32_t)(jekelscore_ratio * 100);
     */
     //Do (very incorrectly rounded and unoptimized) fixed point math instead
-    uint32_t jekelscore_times_100   = (num_passed * 10000) / NUM_TESTS;
-    uint32_t jekelscore_whole       = (num_passed == NUM_TESTS) ? 100 : (jekelscore_times_100 / 100);
-    uint32_t jekelscore_fraction    = (num_passed == NUM_TESTS) ? 0 : (jekelscore_times_100 % 100);
+    uint32_t total_num              = num_passed + num_skipped;
+    uint32_t jekelscore_times_100   = (total_num * 10000) / NUM_TESTS;
+    uint32_t jekelscore_whole       = (total_num == NUM_TESTS) ? 100 : (jekelscore_times_100 / 100);
+    uint32_t jekelscore_fraction    = (total_num == NUM_TESTS) ? 0 : (jekelscore_times_100 % 100);
     wprintf(
-        "Your \x1b[95mJekelScore\x1b[0m\x1b[1m is \x1b[96m%lu.%02lu%%\x1b[0m\x1b[1m so far (\x1b[96m%d/%d\x1b[0m\x1b[1m passed)!",
+        "Your \x1b[95mJekelScore\x1b[0m\x1b[1m is \x1b[96m%lu.%02lu%%\x1b[0m\x1b[1m so far"
+        " (\x1b[96m%d/%d\x1b[0m\x1b[1m passed, \x1b[94m%d/%d\x1b[0m\x1b[1m skipped)!",
         jekelscore_whole,
         jekelscore_fraction,
         num_passed,
+        NUM_TESTS,
+        num_skipped,
         NUM_TESTS
     );
 }
@@ -416,6 +519,19 @@ static void test_function_manager(void*) {
         task.ptask      = test_functions[ii].ptr;
         task.stack_size = test_functions[ii].stack_size;
 
+        if (LAB_NUMBER < test_functions[ii].min_labn) {
+            bprintf(
+                "\r\nSkipping test function \x1b[96m#%u\x1b[91m, \x1b[96m%s()\x1b[91m,"
+                 " since it's a Lab %u test but we're in Lab %u testing mode!",
+                ii + 1,
+                test_functions[ii].name,
+                test_functions[ii].min_labn,
+                LAB_NUMBER
+            );
+            ++num_skipped;
+            continue;
+        }
+        
         wprintf(
             "\r\nRunning test function \x1b[96m#%u\x1b[0m\x1b[1m, \x1b[96m%s()\x1b[0m\x1b[1m, "
             "by \x1b[96m%s\x1b[0m\x1b[1m, with a stack size of \x1b[96m%u\x1b[0m\x1b[1m bytes!",
@@ -465,7 +581,8 @@ static void test_function_manager(void*) {
 
     print_score_so_far();
 
-    if (num_passed == NUM_TESTS) {
+    uint32_t total_num = num_passed + num_skipped;
+    if (total_num == NUM_TESTS) {
         gprintf("You passed all the tests with flying colours! Good stuff! :)");
     } else {
         yprintf("You didn't quite get them all, but don't give up! :)");
@@ -702,7 +819,7 @@ static void square_batman(void*) {//Corresponds to Lab 1 evaluation outline #3 a
             if (square_batman_counters[ii] != 10) {
                 all_counters_are_10 = false;
             }
-
+            
             if (square_batman_counters[ii] < minimum) {
                 minimum = square_batman_counters[ii];
             }
@@ -856,7 +973,7 @@ static void reincarnation(void*) {//Corresponds to Lab 1 evaluation outline #11
     memset(&task, 0, sizeof(TCB));
     task.ptask      = reincarnation;
     task.stack_size = STACK_SIZE;
-
+    
     if (osCreateTask(&task) != RTX_OK) {
         tprintf("The premiums are way to high! I can't afford this!");
         tprintf("(Failed to create a new task!)");
