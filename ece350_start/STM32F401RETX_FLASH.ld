@@ -172,6 +172,7 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
+  _img_end = .;
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :

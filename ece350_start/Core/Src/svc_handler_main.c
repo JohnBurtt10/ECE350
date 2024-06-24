@@ -73,7 +73,6 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			// Change state to DORMANT removes the task from the scheduler */
 			kernelVariables.tcbList[current_TID].state = DORMANT;
 			kernelVariables.numAvaliableTasks--;
-
 			// Call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			__asm("isb");
@@ -178,11 +177,6 @@ int createTask(TCB* task) {
 		return RTX_ERR;
 	}
 
-	if (kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
-		DEBUG_PRINTF(" Failed to create task. Not enough memory\r\n");
-		return RTX_ERR;
-	}
-
 	int TIDtoOverwrite = -1;
 	int TIDofEmptyTCB = MAX_SIGNED_INT_VALUE;
 	int TCBStackSmallest = MAX_SIGNED_INT_VALUE;
@@ -226,6 +220,11 @@ int createTask(TCB* task) {
 
 	// Check if there's a new TCB for the new task, copying so that task becomes ready to use
 	if (TIDofEmptyTCB != 2147483647) {
+		if (kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
+			DEBUG_PRINTF(" Failed to create task. Not enough memory\r\n");
+			return RTX_ERR;
+		}
+
 		tcbs[TIDofEmptyTCB].ptask = task->ptask;
 		tcbs[TIDofEmptyTCB].stack_high = (U32)Get_Thread_Stack(task->stack_size);
 		tcbs[TIDofEmptyTCB].tid = TIDofEmptyTCB;
@@ -236,6 +235,7 @@ int createTask(TCB* task) {
 		tcbs[TIDofEmptyTCB].args = task->args;
 
 		task->tid = TIDofEmptyTCB;
+
 		kernelVariables.totalStackUsed += task->stack_size;
 		kernelVariables.numAvaliableTasks++;
 

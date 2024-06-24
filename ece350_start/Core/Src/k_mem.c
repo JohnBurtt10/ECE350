@@ -16,11 +16,15 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 									.kernelInitRan = 0,
 									.numAvaliableTasks = 0,
 									.kernelStarted = 0,
-									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE};
+									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE,
+									.endOfHeap = 0,
+									.startOfHeap = 0};
 
 void osKernelInit(void) {
 	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
+	kernelVariables.endOfHeap = (unsigned int)&_estack - MAX_STACK_SIZE;
+	kernelVariables.startOfHeap = (unsigned int)&_img_end;
 	return;
 }
 
