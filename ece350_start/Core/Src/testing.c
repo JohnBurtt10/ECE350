@@ -18,13 +18,18 @@
 //  * @retval int
 //  */
 //
-//#ifndef DEBUG_ENABLE
 //void Test_Generate_Thread_Stack();
 //void Init_Task(TCB* task);
 //void Init_Task_2(TCB* task);
 //void Init_Task_3(TCB* task);
 //void Test_osCreateTask(); // Will fill all tcb's with the same tcb.
 //void Print_All_TCBs();
+//
+//void Task_Yield_Exit(void);
+//void Task_Yield(void);
+//void Task_Create(void);
+//
+//TCB task;
 //
 //int main(void)
 //{
@@ -41,37 +46,26 @@
 //
 //	/* Infinite loop */
 //	/* USER CODE BEGIN WHILE */
-//	printf("IN DEBUGGING MODE. TO DISABLE GO TO: common.h AND COMMENT OUT #define DEBUG_ENABLE\r\n");
-//	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should fail
 //	osKernelInit();
 //
-//	TCB test1, test2, test3, test4;
-//	Init_Task(&test1);
-//	Init_Task_2(&test2);
-//	Init_Task_3(&test3);
-//	int result1 = osCreateTask(&test1);
-//	int result2 = osCreateTask(&test2);
-//	int result3 = osCreateTask(&test3);
-//	printf("osCreateTask: %d\r\n", result1);
-//	printf("osCreateTask: %d\r\n", result2);
-//	printf("osCreateTask:  %d\r\n", result3);
+//	TCB tasks[8];
 //
-//	printf("test4 address: %p\r\n", &test4);
-//	printf("osTaskInfo(3, &task4): %d\r\n", osTaskInfo(3, &test4));
+//	for (int i = 0; i < 8; i++){
+//		tasks[i].stack_size = 0x800;
+//		if (i == 2) {
+//			tasks[i].ptask = (void*) &Task_Yield_Exit;
+//		} else if (i == 3){
+//			tasks[i].ptask = (void*) &Task_Create;
+//		}
+//		else {
+//			tasks[i].ptask = (void*) &Task_Yield;
+//		}
+//		int result = osCreateTask(&tasks[i]);
+//		if (!result)
+//			printf("osCreateTask failed\r\n");
+//	}
 //
-//	DEBUG_PRINTF(" OS KERNEL START RETURN VAL: %d\r\n",osKernelStart()); // Should succeed
-//
-//	// Main stack pointer
-//	// 0x0 pointer is a pointer that points to a pointer storing vector table.
-//	// Must dereference once to get the address of the start of the MSP stack.
-//	uint32_t* MSP_INIT_VAL = Get_MSP_INIT_VAL();
-//	printf("MSP Init is: %p\r\n", MSP_INIT_VAL); //note the %p to print apointer. It will be in hex
-//
-////	Test_Generate_Thread_Stack();
-////	Test_osCreateTask();
-//
-//	osYield();
-////	Scheduler();
+//	osKernelStart();
 //
 //	while (1)
 //	{
@@ -79,6 +73,35 @@
 //		/* USER CODE BEGIN 3 */
 //	}
 //	/* USER CODE END 3 */
+//}
+//
+//void Task_Create(void) {
+//	printf("task-%d\r\n", osGetTID());
+//	task.stack_size = 0x800;
+//	task.ptask = (void*) &Task_Yield;
+//	int status = osCreateTask(&task);
+//	printf("creating new task\r\nstack_high of newly created task: %p\r\n", (uint32_t*) kernelVariables.tcbList[task.tid].stack_high);
+//	if (!status)
+//		printf("osCreateTask Failed\r\n");
+//	else
+//		printf("PASS: task stack reused\r\n");
+//	osYield();
+//}
+//
+//void Task_Yield(void){
+//	printf("task-%d\r\n", osGetTID());
+//	while (1) {
+//		osYield();
+//	}
+//
+//	return;
+//}
+//
+//void Task_Yield_Exit(void){
+//	printf("task-%d\r\n", osGetTID());
+//	printf("task exiting...\r\n");
+//	osTaskExit();
+//	return;
 //}
 //
 //void Test_Generate_Thread_Stack(){
@@ -185,4 +208,3 @@
 //	}
 //}
 //
-//#endif

@@ -37,8 +37,8 @@
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
 
 // ------ SUBJECT TO CHANGE ----------
-#define MAIN_STACK_SIZE 0x400 // 1024 bytes. This stores interrupts, setup, and os-specific stuff
-#define STACK_SIZE 0x200 // 1024 bytes. Defined in prelab 1
+#define MAIN_STACK_SIZE 0x400 // This stores interrupts, setup, and os-specific stuff
+#define STACK_SIZE 0x200
 
 #define TID_NULL 0 //predefined Task ID for the NULL task
 #define MAX_TASKS 16 //maximum number of tasks in the system including null task
@@ -81,10 +81,32 @@ typedef struct kernel_variables {
 	int currentRunningTID;
 	int kernelInitRan;
 	int kernelStarted;
+	U32 endOfHeap; // never write to an address beyond this
+	U32 startOfHeap; // When allocating memory, never allocate to an address less than this. Remember heap grows from small to large address
 } Kernel_Variables;
 
-extern Kernel_Variables kernelVariables;
+typedef struct Block {
+	uint32_t type; // FREE/USED
+	uint32_t size; // Block size including sizeof(Block)
+	struct Block* next; // Points to the start of the next block
+} Block;
 
+typedef struct BuddyHeap {
+	Block* freeList;
+	Block* usedList;
+} BuddyHeap;
+
+// ----- MALLOC stuff -----------
+#define LOWEST_RAM_ADDRESS 0x20000000
+#define MIN_BLOCK_SIZE 32 // 32 Bytes. DOES NOT INCLUDE METADATA
+#define MIN_BLOCK_ORDER 5
+#define MAX_ORDER 10
+// Fill heap space with blocks of minimum size + sizeof(Block) to contain metadata. Then, when it comes to mallocing, we need to keep track of buddies
+
+
+extern Kernel_Variables kernelVariables;
+extern uint32_t _img_end;
+extern uint32_t _estack;
 /**
  * @brief: Returns the MSP address
  */
