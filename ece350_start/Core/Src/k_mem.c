@@ -18,7 +18,10 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 									.kernelStarted = 0,
 									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE,
 									.endOfHeap = 0,
-									.startOfHeap = 0};
+									.startOfHeap = 0,
+									.buddyHeapInit = 0};
+
+BuddyHeap buddyHeap;
 
 void osKernelInit(void) {
 	osInitTCBArray();
@@ -28,7 +31,7 @@ void osKernelInit(void) {
 	return;
 }
 
-void osInitTCBArray() {
+void osInitTCBArray(void) {
 	// Initializing null task
 	kernelVariables.tcbList[0].ptask = (void*) &Null_Task_Function;
 	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
@@ -54,6 +57,32 @@ void osInitTCBArray() {
 	}
 
 	return;
+}
+
+int k_mem_init(void) {
+	if (kernelVariables.buddyHeapInit || kernelVariables.kernelInitRan)
+		return RTX_ERR;
+
+	osInitBuddyHeap();
+
+	kernelVariables.buddyHeapInit = 1;
+	return RTX_OK;
+}
+
+
+void osInitBuddyHeap(void) {
+	buddyHeap.currentBlockListIndex = 0;
+	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
+		buddyHeap.freeList[i] = NULL;
+	}
+
+	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+		buddyHeap.bitArray[i] = 0;
+	}
+
+	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+		buddyHeap.blockList[i] = NULL;
+	}
 }
 
 
