@@ -25,4 +25,10 @@ void osKernelInit(void);
  */
 void osInitTCBArray();
 
+/**
+ * @brief: Init Buddy Heap Object
+ * @retval None.
+ */
+void osInitBuddyHeap();
+
 #endif /* INC_K_MEM_H_ */

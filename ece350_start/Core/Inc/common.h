@@ -83,28 +83,31 @@ typedef struct kernel_variables {
 	int kernelStarted;
 	U32 endOfHeap; // never write to an address beyond this
 	U32 startOfHeap; // When allocating memory, never allocate to an address less than this. Remember heap grows from small to large address
+	U32 freeListSize; // Keep track of freeListSize so we don't need to iterate through it to determine count
 } Kernel_Variables;
+
+// ----- MALLOC stuff -----------
+#define LOWEST_RAM_ADDRESS 0x20000000
+#define MIN_BLOCK_ORDER 5
+#define MIN_BLOCK_SIZE (1 << MIN_BLOCK_ORDER) // 32 Bytes. ALSO INCLUDES METADATA
+#define MAX_ORDER 10
+#define BIT_ARRAY_SIZE (1 << (MAX_ORDER - MIN_BLOCK_ORDER)) - 1
 
 typedef struct Block {
 	uint32_t type; // FREE/USED
 	uint32_t size; // Block size including sizeof(Block)
+	uint32_t TIDofOwner;
 	struct Block* next; // Points to the start of the next block
 } Block;
 
 typedef struct BuddyHeap {
-	Block* freeList;
-	Block* usedList;
+	Block* blockList[BIT_ARRAY_SIZE]; // Store pointers to every block (may make life easier for accessing for re-ordering heap on the heap (heh))
+	Block* freeList[MAX_ORDER - MIN_BLOCK_ORDER]; // Eg, 10 - 5 = 5, we can only represent 2^5, 2^6, 2^7, ... , 2^10
+	U32 bitArray[BIT_ARRAY_SIZE];
 } BuddyHeap;
 
-// ----- MALLOC stuff -----------
-#define LOWEST_RAM_ADDRESS 0x20000000
-#define MIN_BLOCK_SIZE 32 // 32 Bytes. DOES NOT INCLUDE METADATA
-#define MIN_BLOCK_ORDER 5
-#define MAX_ORDER 10
-// Fill heap space with blocks of minimum size + sizeof(Block) to contain metadata. Then, when it comes to mallocing, we need to keep track of buddies
-
-
 extern Kernel_Variables kernelVariables;
+extern BuddyHeap buddyHeap;
 extern uint32_t _img_end;
 extern uint32_t _estack;
 /**

@@ -20,15 +20,18 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 									.endOfHeap = 0,
 									.startOfHeap = 0};
 
+BuddyHeap buddyHeap;
+
 void osKernelInit(void) {
 	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
 	kernelVariables.endOfHeap = (unsigned int)&_estack - MAX_STACK_SIZE;
 	kernelVariables.startOfHeap = (unsigned int)&_img_end;
+	osInitBuddyHeap();
 	return;
 }
 
-void osInitTCBArray() {
+void osInitTCBArray(void) {
 	// Initializing null task
 	kernelVariables.tcbList[0].ptask = (void*) &Null_Task_Function;
 	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
@@ -54,6 +57,16 @@ void osInitTCBArray() {
 	}
 
 	return;
+}
+
+void osInitBuddyHeap(void) {
+	for (int i = 0; i < MAX_ORDER - MIN_BLOCK_ORDER; i++) {
+		buddyHeap.freeList[i] = NULL;
+	}
+
+	for (int i = 0; i < BIT_ARRAY_SIZE; i++) {
+		buddyHeap.bitArray[i] = 0;
+	}
 }
 
 
