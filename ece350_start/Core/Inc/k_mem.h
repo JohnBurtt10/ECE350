@@ -31,4 +31,6 @@ void osInitTCBArray();
  */
 void osInitBuddyHeap();
 
+int k_mem_init(void);
+
 #endif /* INC_K_MEM_H_ */

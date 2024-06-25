@@ -81,6 +81,7 @@ typedef struct kernel_variables {
 	int currentRunningTID;
 	int kernelInitRan;
 	int kernelStarted;
+	int buddyHeapInit;
 	U32 endOfHeap; // never write to an address beyond this
 	U32 startOfHeap; // When allocating memory, never allocate to an address less than this. Remember heap grows from small to large address
 	U32 freeListSize; // Keep track of freeListSize so we don't need to iterate through it to determine count
@@ -88,10 +89,13 @@ typedef struct kernel_variables {
 
 // ----- MALLOC stuff -----------
 #define LOWEST_RAM_ADDRESS 0x20000000
-#define MIN_BLOCK_ORDER 5
+#define MIN_BLOCK_ORDER 5 // Min size of a block.
 #define MIN_BLOCK_SIZE (1 << MIN_BLOCK_ORDER) // 32 Bytes. ALSO INCLUDES METADATA
 #define MAX_ORDER 10
-#define BIT_ARRAY_SIZE (1 << (MAX_ORDER - MIN_BLOCK_ORDER)) - 1
+#define HEIGHT_OF_TREE MAX_ORDER + 1
+#define NUMBER_OF_NODES (1 << HEIGHT_OF_TREE) - 1
+#define USED 1
+#define FREE 0
 
 typedef struct Block {
 	uint32_t type; // FREE/USED
@@ -101,9 +105,10 @@ typedef struct Block {
 } Block;
 
 typedef struct BuddyHeap {
-	Block* blockList[BIT_ARRAY_SIZE]; // Store pointers to every block (may make life easier for accessing for re-ordering heap on the heap (heh))
-	Block* freeList[MAX_ORDER - MIN_BLOCK_ORDER]; // Eg, 10 - 5 = 5, we can only represent 2^5, 2^6, 2^7, ... , 2^10
-	U32 bitArray[BIT_ARRAY_SIZE];
+	U32 currentBlockListIndex;
+	Block* blockList[NUMBER_OF_NODES]; // Store pointers to every block (may make life easier for accessing for re-ordering heap on the heap (heh))
+	Block* freeList[HEIGHT_OF_TREE]; // Eg, 2^5 = 32, 2^6 = 64, ....
+	U32 bitArray[NUMBER_OF_NODES];
 } BuddyHeap;
 
 extern Kernel_Variables kernelVariables;
