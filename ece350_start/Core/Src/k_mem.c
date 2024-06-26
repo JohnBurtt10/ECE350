@@ -78,16 +78,11 @@ int k_mem_init(void) {
 
 
 void osInitBuddyHeap(void) {
-<<<<<<< HEAD
 	buddyHeap.currBLIdx = 0;
-=======
-	buddyHeap.currentBlockListIndex = 0;
-
 	for (int i = 0; i < NUMBER_OF_NODES; i++) {
 		blockList[i] = NULL;
 	}
 
->>>>>>> mihir.init-first-block
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
 		freeList[i] = NULL;
 	}
@@ -103,7 +98,6 @@ void osInitBuddyHeap(void) {
 
 	blockList[0] = (Block *)kernelVariables.startOfHeap;
 }
-<<<<<<< HEAD
 
 
 void* k_mem_alloc(size_t size)
@@ -114,50 +108,48 @@ void* k_mem_alloc(size_t size)
 		return NULL;
 	}
 
-	// buddyHeap.blockList[newIdx].startingAddress = buddyHeap.blockList[currBLIdx].size - buddyHeap.blockList[newIdx].size + 1;
+	// blockList[newIdx].startingAddress = blockList[currBLIdx].size - blockList[newIdx].size + 1;
 
 	// Block* curr_block = (Block *());
 	// curr_block.address = (U32)block_address;
 
-	Block curr_block = buddyHeap.blockList[buddyHeap.currBLIdx];
+	Block curr_block = blockList[buddyHeap.currBLIdx];
 
 	// Make block size a multiple of 4 four address alignment
 	uint32_t mult4size= size +sizeof(Block)- ((size+sizeof(Block))%4);
 
-	while(buddyHeap.blockList[buddyHeap.currBLIdx] != NULL){		
-		size_t next_order_size = buddyHeap.blockList[buddyHeap.currBLIdx].size/2; //TODO: fix to correct variable for Block size
+	while(blockList[buddyHeap.currBLIdx] != NULL){		
+		size_t next_order_size = blockList[buddyHeap.currBLIdx].size/2; //TODO: fix to correct variable for Block size
 		
 		// If current block size is larger than requested size and it is free, split
-		if (!buddyHeap.blockList[buddyHeap.currBLIdx].isAllocated && buddyHeap.blockList[buddyHeap.currBLIdx].size >= size){
+		if (!blockList[buddyHeap.currBLIdx].isAllocated && blockList[buddyHeap.currBLIdx].size >= size){
 			// if the size fits into the order's block size, allocate a new block 
 			uint32_t newBlockIdx = buddyHeap.currBLIdx +1; // TODO: +1 for now
 
 			// Add first buddy block to free list, initalized as free
-			buddyHeap.blockList[newBlockIdx].type = FREE;
-			buddyHeap.blockList[newBlockIdx].size = next_order_size;
-			buddyHeap.blockList[newBlockIdx].TIDofOwner = buddyHeap.currBLIdx; // fix
-			buddyHeap.blockList[newBlockIdx].startingAddress = buddyHeap.blockList[buddyHeap.currBLIdx].size - buddyHeap.blockList[newIdx].size + 1;
-			buddyHeap.blockList[newBlockIdx]->next = buddyHeap.blockList[buddyHeap.currBLIdx];
+			blockList[newBlockIdx].type = FREE;
+			blockList[newBlockIdx].size = next_order_size;
+			blockList[newBlockIdx].TIDofOwner = buddyHeap.currBLIdx; // fix
+			blockList[newBlockIdx].startingAddress = blockList[buddyHeap.currBLIdx].size - blockList[newBlockIdx].size + 1;
+			blockList[newBlockIdx]->next = blockList[buddyHeap.currBLIdx];
 			
-			buddyHeap.bitArray[newBlockIdx].type = FREE;
-			buddyHeap.freeList[newBlockIdx] = buddyHeap.blockList[newBlockIdx];
+			bitArray[newBlockIdx].type = FREE;
+			freeList[newBlockIdx] = blockList[newBlockIdx];
 
-			buddyHeap.blockList[buddyHeap.currBLIdx].size = mult4size;
+			blockList[buddyHeap.currBLIdx].size = mult4size;
 
 			// Second buddy block is allocated and linked
-			buddyHeap.blockList[buddyHeap.currBLIdx].isAllocated = USED;
-			buddyHeap.bitArray[buddyHeap.currBLIdx].type = USED;
-			buddyHeap.blockList[buddyHeap.currBLIdx]->next = buddyHeap.blockList[newBlockIdx];
+			blockList[buddyHeap.currBLIdx].isAllocated = USED;
+			bitArray[buddyHeap.currBLIdx].type = USED;
+			blockList[buddyHeap.currBLIdx]->next = blockList[newBlockIdx];
 
 			// remove from free list
 
 			// returns pointer to the start of the usable memory in the block/ allocated memory
-			return (void *)buddyHeap.blockList[buddyHeap.currBLIdx];
+			return (void *)blockList[buddyHeap.currBLIdx];
 		}
 
 		buddyHeap.currBLIdx++; // or instead move to the next element in the block list. 
 	}
 	return NULL;
 }
-=======
->>>>>>> mihir.init-first-block
