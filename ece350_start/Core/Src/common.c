@@ -46,7 +46,8 @@ Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
 				.type = type,
 				.TIDofOwner = tidOwner,
 				.next = NULL,
-				.size = (((size + sizeof(Block)) + 31)/32) * 32 //https://piazza.com/class/lvlcv9pc4496o8/post/177
+				.size = (((size + sizeof(Block)) + 31)/32) * 32, //https://piazza.com/class/lvlcv9pc4496o8/post/177
+				.magicNum = MAGIC_NUMBER_BLOCK
 	};
 
 	*(Block*) heapAddress = temp;
@@ -57,3 +58,8 @@ Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
 	return (Block*)heapAddress;
 }
 
+U32 Calculate_Order(U32 num) {
+	U32 result = 0;
+	while (num >>= 1) result++;
+	return result;
+}

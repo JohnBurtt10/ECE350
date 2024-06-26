@@ -85,6 +85,10 @@ int main(void)
 	DEBUG_PRINTF("First Block Size: %d bytes \r\n", firstBlock->size);
 	DEBUG_PRINTF("First Block TID of Owner: %d\r\n", firstBlock->TIDofOwner);
 	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
+	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
+
+	int test = Calculate_Order(512);
+	DEBUG_PRINTF("Order of 32: %d\r\n", test);
 	while (1)
 	{
 		/* USER CODE END WHILE */
