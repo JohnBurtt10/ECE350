@@ -118,11 +118,18 @@ void* k_mem_alloc(size_t size)
 			buddyHeap.blockList[newBlockIdx].TIDofOwner = buddyHeap.currBLIdx; // fix
 			buddyHeap.blockList[newBlockIdx].startingAddress = buddyHeap.blockList[buddyHeap.currBLIdx].size - buddyHeap.blockList[newIdx].size + 1;
 			buddyHeap.blockList[newBlockIdx]->next = buddyHeap.blockList[buddyHeap.currBLIdx];
+			
+			buddyHeap.bitArray[newBlockIdx].type = FREE;
+			buddyHeap.freeList[newBlockIdx] = buddyHeap.blockList[newBlockIdx];
 
 			buddyHeap.blockList[buddyHeap.currBLIdx].size = mult4size;
 
-			// Second buddy block is allocated
+			// Second buddy block is allocated and linked
 			buddyHeap.blockList[buddyHeap.currBLIdx].isAllocated = USED;
+			buddyHeap.bitArray[buddyHeap.currBLIdx].type = USED;
+			buddyHeap.blockList[buddyHeap.currBLIdx]->next = buddyHeap.blockList[newBlockIdx];
+
+			// remove from free list
 
 			// returns pointer to the start of the usable memory in the block/ allocated memory
 			return (void *)buddyHeap.blockList[buddyHeap.currBLIdx];
