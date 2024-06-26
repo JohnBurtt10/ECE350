@@ -31,8 +31,6 @@ void osInitTCBArray();
  */
 void osInitBuddyHeap();
 
-//void createNewBlock(U32 address, U32 blockSize, task_t tid);
-
 int k_mem_init(void);
 
 #endif /* INC_K_MEM_H_ */
