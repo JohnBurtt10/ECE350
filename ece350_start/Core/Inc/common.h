@@ -107,14 +107,14 @@ typedef struct Block {
 } Block;
 
 typedef struct BuddyHeap {
-	U32 currBLIdx;
+	U32 currentBlockListSize;
+	Block* blockList[NUMBER_OF_NODES];
+	Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
+	U8 bitArray[NUMBER_OF_NODES];
 } BuddyHeap;
 
 extern Kernel_Variables kernelVariables;
 extern BuddyHeap buddyHeap;
-extern Block* blockList[NUMBER_OF_NODES];
-extern Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
-extern U8 bitArray[NUMBER_OF_NODES];
 extern uint32_t _img_end;
 extern uint32_t _estack;
 extern uint32_t _Min_Stack_Size;
@@ -132,5 +132,12 @@ unsigned int Get_Total_Memory_Used();
  * @brief: Finds the next TCB to run and returns the TID
 */
 int Scheduler(void);
+
+
+/**
+ * @brief: Creates a block given heap address, size of requested malloc, current type and owner.
+ * 			NOTE: If requested size will be converted to a multiple of 32 bytes!
+ */
+Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner);
 
 #endif /* INC_COMMON_H_ */

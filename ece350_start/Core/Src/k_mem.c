@@ -23,12 +23,6 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 
 BuddyHeap buddyHeap;
 
-Block* blockList[NUMBER_OF_NODES];
-
-Block* freeList[HEIGHT_OF_TREE];
-
-U8 bitArray[NUMBER_OF_NODES];
-
 
 void osKernelInit(void) {
 	osInitTCBArray();
@@ -78,25 +72,21 @@ int k_mem_init(void) {
 
 
 void osInitBuddyHeap(void) {
-	buddyHeap.currBLIdx = 0;
+	buddyHeap.currentBlockListSize = 0;
+
 	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		blockList[i] = NULL;
+		buddyHeap.blockList[i] = NULL;
 	}
 
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
-		freeList[i] = NULL;
+		buddyHeap.freeList[i] = NULL;
 	}
 
 	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		bitArray[i] = 0;
+		buddyHeap.bitArray[i] = 0;
 	}
 
-	((Block *)kernelVariables.startOfHeap)->type = FREE;
-	((Block *)kernelVariables.startOfHeap)->size = kernelVariables.endOfHeap - kernelVariables.startOfHeap;
-	((Block *)kernelVariables.startOfHeap)->TIDofOwner = TID_NULL;
-	((Block *)kernelVariables.startOfHeap)->next = NULL;
-
-	blockList[0] = (Block *)kernelVariables.startOfHeap;
+	Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
 }
 
 
