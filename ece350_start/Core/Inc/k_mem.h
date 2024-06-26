@@ -11,6 +11,7 @@
 #define INC_K_MEM_H_
 
 #include "k_task.h"
+#include <stddef.h>
 #include "svc_handler_main.h"
 
 /**
@@ -32,5 +33,7 @@ void osInitTCBArray();
 void osInitBuddyHeap();
 
 int k_mem_init(void);
+
+int k_mem_count_(size_t size);
 
 #endif /* INC_K_MEM_H_ */

@@ -86,10 +86,14 @@ void osInitBuddyHeap(void) {
 		buddyHeap.bitArray[i] = 0;
 	}
 
-	((Block *)kernelVariables.startOfHeap)->type = FREE;
-	((Block *)kernelVariables.startOfHeap)->size = kernelVariables.endOfHeap - kernelVariables.startOfHeap - sizeof(Block);
- 	((Block *)kernelVariables.startOfHeap)->TIDofOwner = TID_NULL;
-	((Block *)kernelVariables.startOfHeap)->next = NULL;
+	Block temp = {
+			.type = FREE,
+			.TIDofOwner = TID_NULL,
+			.next = NULL,
+			.size = kernelVariables.endOfHeap - kernelVariables.startOfHeap - sizeof(Block)
+	};
 
-	buddyHeap.blockList[0] = (Block *)kernelVariables.startOfHeap;
+	*(Block*) (kernelVariables.startOfHeap) = temp;
+
+	buddyHeap.blockList[0] = (Block *)(void*)kernelVariables.startOfHeap;
 }
