@@ -23,6 +23,13 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 
 BuddyHeap buddyHeap;
 
+Block* blockList[NUMBER_OF_NODES];
+
+Block* freeList[HEIGHT_OF_TREE];
+
+U8 bitArray[NUMBER_OF_NODES];
+
+
 void osKernelInit(void) {
 	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
@@ -72,29 +79,23 @@ int k_mem_init(void) {
 
 void osInitBuddyHeap(void) {
 	buddyHeap.currentBlockListIndex = 0;
+
+	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+		blockList[i] = NULL;
+	}
+
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
-		buddyHeap.freeList[i] = NULL;
+		freeList[i] = NULL;
 	}
 
 	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		buddyHeap.bitArray[i] = 0;
+		bitArray[i] = 0;
 	}
 
-	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		if (i == 0) {
-			buddyHeap.blockList[i].type = FREE;
-			buddyHeap.blockList[i].size = kernelVariables.startOfHeap - kernelVariables.endOfHeap;
-			buddyHeap.blockList[i].TIDofOwner = TID_NULL;
-			buddyHeap.blockList[i].startingAddress = kernelVariables.startOfHeap;
-			buddyHeap.blockList[i].next = NULL;
-		} else {
-			buddyHeap.blockList[i].type = FREE;
-			buddyHeap.blockList[i].size = 0;
-			buddyHeap.blockList[i].TIDofOwner = TID_NULL;
-			buddyHeap.blockList[i].startingAddress = 0;
-			buddyHeap.blockList[i].next = NULL;
-		}
-	}
+	((Block *)kernelVariables.startOfHeap)->type = FREE;
+	((Block *)kernelVariables.startOfHeap)->size = kernelVariables.endOfHeap - kernelVariables.startOfHeap;
+	((Block *)kernelVariables.startOfHeap)->TIDofOwner = TID_NULL;
+	((Block *)kernelVariables.startOfHeap)->next = NULL;
+
+	blockList[0] = (Block *)kernelVariables.startOfHeap;
 }
-
-
