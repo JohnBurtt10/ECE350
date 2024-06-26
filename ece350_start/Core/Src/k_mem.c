@@ -108,6 +108,8 @@ void* k_mem_alloc(size_t size)
 		return NULL;
 	}
 
+	Metadata
+
 	// blockList[newIdx].startingAddress = blockList[currBLIdx].size - blockList[newIdx].size + 1;
 
 	// Block* curr_block = (Block *());
@@ -129,7 +131,7 @@ void* k_mem_alloc(size_t size)
 			// Add first buddy block to free list, initalized as free
 			blockList[newBlockIdx].type = FREE;
 			blockList[newBlockIdx].size = next_order_size;
-			blockList[newBlockIdx].TIDofOwner = buddyHeap.currBLIdx; // fix
+			blockList[newBlockIdx].TIDofOwner = kernelVariables.currentRunningTID; // fix
 			blockList[newBlockIdx].startingAddress = blockList[buddyHeap.currBLIdx].size - blockList[newBlockIdx].size + 1;
 			blockList[newBlockIdx]->next = blockList[buddyHeap.currBLIdx];
 			
