@@ -108,7 +108,6 @@ void* k_mem_alloc(size_t size)
 		return NULL;
 	}
 
-	Metadata
 
 	// blockList[newIdx].startingAddress = blockList[currBLIdx].size - blockList[newIdx].size + 1;
 
@@ -118,40 +117,57 @@ void* k_mem_alloc(size_t size)
 	Block curr_block = blockList[buddyHeap.currBLIdx];
 
 	// Make block size a multiple of 4 four address alignment
-	uint32_t mult4size= size +sizeof(Block)- ((size+sizeof(Block))%4);
+	// uint32_t mult4size= size +sizeof(Block)- ((size+sizeof(Block))%4);
+	uint32_t required_size = size+ sizeof(Block);
 
-	while(blockList[buddyHeap.currBLIdx] != NULL){		
-		size_t next_order_size = blockList[buddyHeap.currBLIdx].size/2; //TODO: fix to correct variable for Block size
+	/* Start at free list 
+	// Calculate order of required block
+	While loop: Check which size is large enough to fit the requested size to get the order
+	- Calc corresponding index in free list
+
+	While: use the free list index and subtract to get to the 
+	- Iterate up the free list to find smallest available block
+	- check if the required size is able to fit into that block (choosing the smallest satisfactory)
+	- If block is free then split
+
+	Var: counts number of orders moved up to get the number of splits required or compare req size to current order level block size to know when to stop splitting and create the block
+	*/
+
+	
+	
+	
+	// while( freeList[]!= NULL){		
+	// 	size_t next_order_size = blockList[buddyHeap.currBLIdx].size/2; //TODO: fix to correct variable for Block size
 		
-		// If current block size is larger than requested size and it is free, split
-		if (!blockList[buddyHeap.currBLIdx].isAllocated && blockList[buddyHeap.currBLIdx].size >= size){
-			// if the size fits into the order's block size, allocate a new block 
-			uint32_t newBlockIdx = buddyHeap.currBLIdx +1; // TODO: +1 for now
+	// 	// If current block size is larger than requested size and it is free, split
+	// 	if (!blockList[buddyHeap.currBLIdx].isAllocated && blockList[buddyHeap.currBLIdx].size >= size){
+	// 		// if the size fits into the order's block size, allocate a new block 
+	// 		uint32_t newBlockIdx = buddyHeap.currBLIdx +1; // TODO: +1 for now
 
-			// Add first buddy block to free list, initalized as free
-			blockList[newBlockIdx].type = FREE;
-			blockList[newBlockIdx].size = next_order_size;
-			blockList[newBlockIdx].TIDofOwner = kernelVariables.currentRunningTID; // fix
-			blockList[newBlockIdx].startingAddress = blockList[buddyHeap.currBLIdx].size - blockList[newBlockIdx].size + 1;
-			blockList[newBlockIdx]->next = blockList[buddyHeap.currBLIdx];
+	// 		// Add first buddy block to free list, initalized as free
+	// 		blockList[newBlockIdx].type = FREE;
+	// 		blockList[newBlockIdx].size = next_order_size;
+	// 		blockList[newBlockIdx].TIDofOwner = kernelVariables.currentRunningTID; // fix
+	// 		blockList[newBlockIdx].startingAddress = blockList[buddyHeap.currBLIdx].size - blockList[newBlockIdx].size + 1;
+	// 		blockList[newBlockIdx]->next = blockList[buddyHeap.currBLIdx];
 			
-			bitArray[newBlockIdx].type = FREE;
-			freeList[newBlockIdx] = blockList[newBlockIdx];
+	// 		bitArray[newBlockIdx].type = FREE;
+	// 		freeList[newBlockIdx] = blockList[newBlockIdx];
 
-			blockList[buddyHeap.currBLIdx].size = mult4size;
+	// 		blockList[buddyHeap.currBLIdx].size = mult4size;
 
-			// Second buddy block is allocated and linked
-			blockList[buddyHeap.currBLIdx].isAllocated = USED;
-			bitArray[buddyHeap.currBLIdx].type = USED;
-			blockList[buddyHeap.currBLIdx]->next = blockList[newBlockIdx];
+	// 		// Second buddy block is allocated and linked
+	// 		blockList[buddyHeap.currBLIdx].isAllocated = USED;
+	// 		bitArray[buddyHeap.currBLIdx].type = USED;
+	// 		blockList[buddyHeap.currBLIdx]->next = blockList[newBlockIdx];
 
-			// remove from free list
+	// 		// remove from free list
 
-			// returns pointer to the start of the usable memory in the block/ allocated memory
-			return (void *)blockList[buddyHeap.currBLIdx];
-		}
+	// 		// returns pointer to the start of the usable memory in the block/ allocated memory
+	// 		return (void *)blockList[buddyHeap.currBLIdx];
+	// 	}
 
-		buddyHeap.currBLIdx++; // or instead move to the next element in the block list. 
-	}
-	return NULL;
+	// 	buddyHeap.currBLIdx++; // or instead move to the next element in the block list. 
+	// }
+	// return NULL;
 }
