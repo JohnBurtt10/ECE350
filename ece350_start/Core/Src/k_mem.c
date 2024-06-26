@@ -23,11 +23,18 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 
 BuddyHeap buddyHeap;
 
+Block* blockList[NUMBER_OF_NODES];
+
+Block* freeList[HEIGHT_OF_TREE];
+
+U8 bitArray[NUMBER_OF_NODES];
+
+
 void osKernelInit(void) {
 	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
-	kernelVariables.endOfHeap = (unsigned int)&_estack - MAX_STACK_SIZE;
 	kernelVariables.startOfHeap = (unsigned int)&_img_end;
+	kernelVariables.endOfHeap = (unsigned int)&_estack - (unsigned int)&_Min_Stack_Size;
 	return;
 }
 
@@ -60,7 +67,7 @@ void osInitTCBArray(void) {
 }
 
 int k_mem_init(void) {
-	if (kernelVariables.buddyHeapInit || kernelVariables.kernelInitRan)
+	if (kernelVariables.buddyHeapInit || !kernelVariables.kernelInitRan)
 		return RTX_ERR;
 
 	osInitBuddyHeap();
@@ -71,19 +78,32 @@ int k_mem_init(void) {
 
 
 void osInitBuddyHeap(void) {
+<<<<<<< HEAD
 	buddyHeap.currBLIdx = 0;
+=======
+	buddyHeap.currentBlockListIndex = 0;
+
+	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+		blockList[i] = NULL;
+	}
+
+>>>>>>> mihir.init-first-block
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
-		buddyHeap.freeList[i] = NULL;
+		freeList[i] = NULL;
 	}
 
 	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		buddyHeap.bitArray[i] = 0;
+		bitArray[i] = 0;
 	}
 
-	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		buddyHeap.blockList[i] = NULL;
-	}
+	((Block *)kernelVariables.startOfHeap)->type = FREE;
+	((Block *)kernelVariables.startOfHeap)->size = kernelVariables.endOfHeap - kernelVariables.startOfHeap;
+	((Block *)kernelVariables.startOfHeap)->TIDofOwner = TID_NULL;
+	((Block *)kernelVariables.startOfHeap)->next = NULL;
+
+	blockList[0] = (Block *)kernelVariables.startOfHeap;
 }
+<<<<<<< HEAD
 
 
 void* k_mem_alloc(size_t size)
@@ -139,3 +159,5 @@ void* k_mem_alloc(size_t size)
 	}
 	return NULL;
 }
+=======
+>>>>>>> mihir.init-first-block

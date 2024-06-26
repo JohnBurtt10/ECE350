@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-//#define DEBUG_ENABLE // Comment me out to disable debugging
+#define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
@@ -108,15 +108,16 @@ typedef struct Block {
 
 typedef struct BuddyHeap {
 	U32 currBLIdx;
-	Block blockList[NUMBER_OF_NODES]; // Store pointers to every block (may make life easier for accessing for re-ordering heap on the heap (heh))
-	Block* freeList[HEIGHT_OF_TREE]; // Eg, 2^5 = 32, 2^6 = 64, ....
-	U32 bitArray[NUMBER_OF_NODES];
 } BuddyHeap;
 
 extern Kernel_Variables kernelVariables;
 extern BuddyHeap buddyHeap;
+extern Block* blockList[NUMBER_OF_NODES];
+extern Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
+extern U8 bitArray[NUMBER_OF_NODES];
 extern uint32_t _img_end;
 extern uint32_t _estack;
+extern uint32_t _Min_Stack_Size;
 /**
  * @brief: Returns the MSP address
  */
