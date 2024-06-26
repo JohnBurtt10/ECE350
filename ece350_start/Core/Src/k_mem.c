@@ -23,11 +23,12 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 
 BuddyHeap buddyHeap;
 
+
 void osKernelInit(void) {
 	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
-	kernelVariables.endOfHeap = (unsigned int)&_estack - MAX_STACK_SIZE;
 	kernelVariables.startOfHeap = (unsigned int)&_img_end;
+	kernelVariables.endOfHeap = (unsigned int)&_estack - (unsigned int)&_Min_Stack_Size;
 	return;
 }
 
@@ -60,7 +61,7 @@ void osInitTCBArray(void) {
 }
 
 int k_mem_init(void) {
-	if (kernelVariables.buddyHeapInit || kernelVariables.kernelInitRan)
+	if (kernelVariables.buddyHeapInit || !kernelVariables.kernelInitRan)
 		return RTX_ERR;
 
 	osInitBuddyHeap();
@@ -71,7 +72,12 @@ int k_mem_init(void) {
 
 
 void osInitBuddyHeap(void) {
-	buddyHeap.currentBlockListIndex = 0;
+	buddyHeap.currentBlockListSize = 0;
+
+	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+		buddyHeap.blockList[i] = NULL;
+	}
+
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
 		buddyHeap.freeList[i] = NULL;
 	}
@@ -80,9 +86,21 @@ void osInitBuddyHeap(void) {
 		buddyHeap.bitArray[i] = 0;
 	}
 
-	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		buddyHeap.blockList[i] = NULL;
-	}
+	Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
 }
 
+Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
+	Block temp = {
+				.type = type,
+				.TIDofOwner = tidOwner,
+				.next = NULL,
+				.size = (((size + sizeof(Block)) + 31)/32) * 32 //https://piazza.com/class/lvlcv9pc4496o8/post/177
+	};
 
+	*(Block*) heapAddress = temp;
+	buddyHeap.blockList[buddyHeap.currentBlockListSize] = (Block*) heapAddress;
+
+	buddyHeap.currentBlockListSize += 1;
+
+	return (Block*)heapAddress;
+}
