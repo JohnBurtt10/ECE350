@@ -92,16 +92,18 @@ typedef struct kernel_variables {
 #define MIN_BLOCK_ORDER 5 // Min size of a block.
 #define MIN_BLOCK_SIZE (1 << MIN_BLOCK_ORDER) // 32 Bytes. ALSO INCLUDES METADATA
 #define MAX_ORDER 10
-#define HEIGHT_OF_TREE MAX_ORDER + 1
-#define NUMBER_OF_NODES (1 << HEIGHT_OF_TREE) - 1
+#define HEIGHT_OF_TREE (MAX_ORDER + 1)
+#define NUMBER_OF_NODES ((1 << HEIGHT_OF_TREE) - 1)
 #define USED 1
 #define FREE 0
+#define MAGIC_NUMBER_BLOCK 0x12345678
 
 typedef struct Block {
 	uint32_t type; // FREE/USED
 	uint32_t size; // Block size including sizeof(Block)
 	uint32_t TIDofOwner;
 	struct Block* next; // Points to the start of the next block
+	U32 magicNum;
 } Block;
 
 typedef struct BuddyHeap {
@@ -137,5 +139,7 @@ int Scheduler(void);
  * 			NOTE: If requested size will be converted to a multiple of 32 bytes!
  */
 Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner);
+
+U32 Calculate_Order(U32 num);
 
 #endif /* INC_COMMON_H_ */
