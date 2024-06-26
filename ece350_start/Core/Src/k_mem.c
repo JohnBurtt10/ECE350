@@ -88,19 +88,3 @@ void osInitBuddyHeap(void) {
 
 	Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
 }
-
-Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
-	Block temp = {
-				.type = type,
-				.TIDofOwner = tidOwner,
-				.next = NULL,
-				.size = (((size + sizeof(Block)) + 31)/32) * 32 //https://piazza.com/class/lvlcv9pc4496o8/post/177
-	};
-
-	*(Block*) heapAddress = temp;
-	buddyHeap.blockList[buddyHeap.currentBlockListSize] = (Block*) heapAddress;
-
-	buddyHeap.currentBlockListSize += 1;
-
-	return (Block*)heapAddress;
-}
