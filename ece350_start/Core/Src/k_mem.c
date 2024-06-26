@@ -86,3 +86,44 @@ void osInitBuddyHeap(void) {
 }
 
 
+void* k_mem_alloc(size_t size)
+{
+	// check that k_mem_init was called and successfully initialized the heap
+	// Return null if the number of bytes requested is 0 or if heap is not initialized
+	if(kernelVariables.buddyHeapInit == 0 || kernelVariables.kernelInitRan == 0|| size == 0){
+		return NULL;
+	}
+
+	// Block* curr_block = (Block *());
+	// curr_block.address = (U32)block_address;
+
+	Block curr_block = buddyHeap.blockList[buddyHeap.currentBlockListIndex];
+
+	// size_t new_size = size- (size + sizeof(Block))%4;
+	size_t new_size = curr_block->size; 
+
+	while(curr_block != NULL){
+		// if size requested is greater than the current order block size, don't allocate and exit loop
+		// check if the block was not allocated already/ free
+		if(size> new_size){
+			
+		}
+		size_t next_order_size = curr_block.size/2; //TODO: fix to correct variable for Block size
+		if(size +sizeof(Block) < next_order_size){
+			// if the size fits into the order's block size, allocate a new block 
+			Block* new_block = Block*(next_order_size);
+			new_block.type = 0; // Initalize the new block as free
+			new_block->next = curr_block;
+			curr_block->next = new_block;
+		}
+
+		curr_block.isAllocated = 1;
+		curr_block = curr_block -> next
+		// check if size fits into the /2 
+	}
+
+	// Allocate size bytes using the Buddy algorithm
+
+	// returns pointer to the start of the usable memory in the block
+	return NULL;
+}
