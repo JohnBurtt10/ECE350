@@ -102,7 +102,7 @@ void* k_mem_alloc(size_t size)
 	Block curr_block = buddyHeap.blockList[buddyHeap.currBLIdx];
 
 	// Make block size a multiple of 4 four address alignment
-	uint32_t mult4size= size +sizeof(Block)- ((size+sizeof(Block))%4);}
+	uint32_t mult4size= size +sizeof(Block)- ((size+sizeof(Block))%4);
 
 	while(buddyHeap.blockList[buddyHeap.currBLIdx] != NULL){		
 		size_t next_order_size = buddyHeap.blockList[buddyHeap.currBLIdx].size/2; //TODO: fix to correct variable for Block size
