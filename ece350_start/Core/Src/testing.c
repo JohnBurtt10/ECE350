@@ -68,7 +68,7 @@ int main(void)
 //
 //	osKernelStart();
 
-	Block* firstBlock = blockList[0];
+	Block* firstBlock = buddyHeap.blockList[0];
 
 	while (1)
 	{
@@ -83,9 +83,6 @@ int main(void)
 		DEBUG_PRINTF("Size of TCB: %d\r\n", sizeof(TCB));
 		DEBUG_PRINTF("Size of Block: %d\r\n", sizeof(Block));
 		DEBUG_PRINTF("Size of BuddyHeap: %d\r\n", sizeof(BuddyHeap));
-		DEBUG_PRINTF("Size of Block List: %d\r\n", sizeof(Block *) * NUMBER_OF_NODES);
-		DEBUG_PRINTF("Size of Free List: %d\r\n", sizeof(Block *) * HEIGHT_OF_TREE);
-		DEBUG_PRINTF("Size of Bit Array: %d\r\n", sizeof(U32) * NUMBER_OF_NODES);
 		DEBUG_PRINTF("First Block Address: %x\r\n", firstBlock);
 		DEBUG_PRINTF("First Block Type: %d\r\n", firstBlock->type);
 		DEBUG_PRINTF("First Block Size: %d bytes \r\n", firstBlock->size);

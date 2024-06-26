@@ -106,13 +106,13 @@ typedef struct Block {
 
 typedef struct BuddyHeap {
 	U32 currentBlockListIndex;
+	Block* blockList[NUMBER_OF_NODES];
+	Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
+	U8 bitArray[NUMBER_OF_NODES];
 } BuddyHeap;
 
 extern Kernel_Variables kernelVariables;
 extern BuddyHeap buddyHeap;
-extern Block* blockList[NUMBER_OF_NODES];
-extern Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
-extern U8 bitArray[NUMBER_OF_NODES];
 extern uint32_t _img_end;
 extern uint32_t _estack;
 extern uint32_t _Min_Stack_Size;
