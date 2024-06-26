@@ -72,7 +72,7 @@ int k_mem_init(void) {
 
 
 void osInitBuddyHeap(void) {
-	buddyHeap.currentBlockListIndex = 0;
+	buddyHeap.currentBlockListSize = 0;
 
 	for (int i = 0; i < NUMBER_OF_NODES; i++) {
 		buddyHeap.blockList[i] = NULL;
@@ -86,14 +86,21 @@ void osInitBuddyHeap(void) {
 		buddyHeap.bitArray[i] = 0;
 	}
 
+	Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
+}
+
+Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
 	Block temp = {
-			.type = FREE,
-			.TIDofOwner = TID_NULL,
-			.next = NULL,
-			.size = kernelVariables.endOfHeap - kernelVariables.startOfHeap - sizeof(Block)
+				.type = type,
+				.TIDofOwner = tidOwner,
+				.next = NULL,
+				.size = (((size + sizeof(Block)) + 31)/32) * 32 //https://piazza.com/class/lvlcv9pc4496o8/post/177
 	};
 
-	*(Block*) (kernelVariables.startOfHeap) = temp;
+	*(Block*) heapAddress = temp;
+	buddyHeap.blockList[buddyHeap.currentBlockListSize] = (Block*) heapAddress;
 
-	buddyHeap.blockList[0] = (Block *)(void*)kernelVariables.startOfHeap;
+	buddyHeap.currentBlockListSize += 1;
+
+	return (Block*)heapAddress;
 }
