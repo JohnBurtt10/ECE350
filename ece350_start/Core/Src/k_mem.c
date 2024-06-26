@@ -71,7 +71,7 @@ int k_mem_init(void) {
 
 
 void osInitBuddyHeap(void) {
-	buddyHeap.currentBlockListIndex = 0;
+	buddyHeap.currBLIdx = 0;
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
 		buddyHeap.freeList[i] = NULL;
 	}
@@ -90,40 +90,45 @@ void* k_mem_alloc(size_t size)
 {
 	// check that k_mem_init was called and successfully initialized the heap
 	// Return null if the number of bytes requested is 0 or if heap is not initialized
-	if(kernelVariables.buddyHeapInit == 0 || kernelVariables.kernelInitRan == 0|| size == 0){
+	if(!kernelVariables.buddyHeapInit || !kernelVariables.kernelInitRan|| size == 0){
 		return NULL;
 	}
+
+	// buddyHeap.blockList[newIdx].startingAddress = buddyHeap.blockList[currBLIdx].size - buddyHeap.blockList[newIdx].size + 1;
 
 	// Block* curr_block = (Block *());
 	// curr_block.address = (U32)block_address;
 
-	Block curr_block = buddyHeap.blockList[buddyHeap.currentBlockListIndex];
+	Block curr_block = buddyHeap.blockList[buddyHeap.currBLIdx];
 
-	// size_t new_size = size- (size + sizeof(Block))%4;
-	size_t new_size = curr_block->size; 
+	// Make block size a multiple of 4 four address alignment
+	uint32_t mult4size= size +sizeof(Block)- ((size+sizeof(Block))%4);}
 
-	while(curr_block != NULL){
-		// if size requested is greater than the current order block size, don't allocate and exit loop
-		// check if the block was not allocated already/ free
-		if(size> new_size){
-			
-		}
-		size_t next_order_size = curr_block.size/2; //TODO: fix to correct variable for Block size
-		if(size +sizeof(Block) < next_order_size){
+	while(buddyHeap.blockList[buddyHeap.currBLIdx] != NULL){		
+		size_t next_order_size = buddyHeap.blockList[buddyHeap.currBLIdx].size/2; //TODO: fix to correct variable for Block size
+		
+		// If current block size is larger than requested size and it is free, split
+		if (!buddyHeap.blockList[buddyHeap.currBLIdx].isAllocated && buddyHeap.blockList[buddyHeap.currBLIdx].size >= size){
 			// if the size fits into the order's block size, allocate a new block 
-			Block* new_block = Block*(next_order_size);
-			new_block.type = 0; // Initalize the new block as free
-			new_block->next = curr_block;
-			curr_block->next = new_block;
+			uint32_t newBlockIdx = buddyHeap.currBLIdx +1; // TODO: +1 for now
+
+			// Add first buddy block to free list, initalized as free
+			buddyHeap.blockList[newBlockIdx].type = FREE;
+			buddyHeap.blockList[newBlockIdx].size = next_order_size;
+			buddyHeap.blockList[newBlockIdx].TIDofOwner = buddyHeap.currBLIdx; // fix
+			buddyHeap.blockList[newBlockIdx].startingAddress = buddyHeap.blockList[buddyHeap.currBLIdx].size - buddyHeap.blockList[newIdx].size + 1;
+			buddyHeap.blockList[newBlockIdx]->next = buddyHeap.blockList[buddyHeap.currBLIdx];
+
+			buddyHeap.blockList[buddyHeap.currBLIdx].size = mult4size;
+
+			// Second buddy block is allocated
+			buddyHeap.blockList[buddyHeap.currBLIdx].isAllocated = USED;
+
+			// returns pointer to the start of the usable memory in the block/ allocated memory
+			return (void *)buddyHeap.blockList[buddyHeap.currBLIdx];
 		}
 
-		curr_block.isAllocated = 1;
-		curr_block = curr_block -> next
-		// check if size fits into the /2 
+		buddyHeap.currBLIdx++; // or instead move to the next element in the block list. 
 	}
-
-	// Allocate size bytes using the Buddy algorithm
-
-	// returns pointer to the start of the usable memory in the block
 	return NULL;
 }

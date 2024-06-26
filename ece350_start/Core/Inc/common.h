@@ -102,11 +102,12 @@ typedef struct Block {
 	uint32_t size; // Block size including sizeof(Block)
 	uint32_t TIDofOwner;
 	uint32_t startingAddress;
+	int isAllocated;
 	struct Block* next; // Points to the start of the next block
 } Block;
 
 typedef struct BuddyHeap {
-	U32 currentBlockListIndex;
+	U32 currBLIdx;
 	Block blockList[NUMBER_OF_NODES]; // Store pointers to every block (may make life easier for accessing for re-ordering heap on the heap (heh))
 	Block* freeList[HEIGHT_OF_TREE]; // Eg, 2^5 = 32, 2^6 = 64, ....
 	U32 bitArray[NUMBER_OF_NODES];
