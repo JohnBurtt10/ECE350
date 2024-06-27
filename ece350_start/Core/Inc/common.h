@@ -103,7 +103,6 @@ typedef struct Block {
 	uint32_t size; // Block size including sizeof(Block)
 	uint32_t TIDofOwner;
 	uint32_t startingAddress;
-	int isAllocated;
 	struct Block* next; // Points to the start of the next block
 	U32 magicNum;
 } Block;
@@ -143,5 +142,9 @@ int Scheduler(void);
 Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner);
 
 U32 Calculate_Order(U32 num);
+
+U32 Calculate_Free_List_Idx(U32 num);
+
+Block* Split_Block(Block* parentBlock)
 
 #endif /* INC_COMMON_H_ */

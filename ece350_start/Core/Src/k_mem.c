@@ -98,17 +98,49 @@ void* k_mem_alloc(size_t size)
 		return NULL;
 	}
 
+	uint32_t required_size = size + sizeof(Block);
 
-	// blockList[newIdx].startingAddress = blockList[currBLIdx].size - blockList[newIdx].size + 1;
+	U32 required_idx = Calculate_Free_List_Idx(required_size);
 
-	// Block* curr_block = (Block *());
-	// curr_block.address = (U32)block_address;
+	// the requested size is too large
+	if(required_idx < 0){
+		return NULL;
+	}
 
-	Block curr_block = blockList[buddyHeap.currBLIdx];
+	U32 smallest_av_block_idx = required_idx;
 
-	// Make block size a multiple of 4 four address alignment
-	// uint32_t mult4size= size +sizeof(Block)- ((size+sizeof(Block))%4);
-	uint32_t required_size = size+ sizeof(Block);
+	// Iterate through the free list to find the smallest available block already allocated/ not empty
+	while(smallest_av_block_idx >= 0){
+		// Save the index of the first block that is free
+		if(buddyHeap.freeList[smallest_av_block_idx]!= NULL && buddyHeap.freeList[smallest_av_block_idx].type == FREE){
+			break;
+		}
+
+		// Decrease level until non-empty list is found
+		smallest_av_block_idx--;
+	}
+
+	// If there is no free block, allocation fails
+	if(smallest_av_block_idx ==-1 ){
+		return NULL;
+	}
+
+	Block* curr_block = buddyHeap.freeList[smallest_av_block_idx];
+	U32 num_splits_req = smallest_av_block_idx-required_idx;
+
+	// Split the head of the list until the level of the required index is reached
+	for(U32 i = 0; i< num_splits_req; i++){
+		curr_block = Split_Block(curr_block);
+
+		if(i == num_splits_req){
+			// return pointer to the allocated memory block
+			return (void*)curr_block;
+		}
+		curr_block = curr_block->next;
+	}
+
+	return NULL;
+
 
 	/* Start at free list 
 	// Calculate order of required block
@@ -122,42 +154,4 @@ void* k_mem_alloc(size_t size)
 
 	Var: counts number of orders moved up to get the number of splits required or compare req size to current order level block size to know when to stop splitting and create the block
 	*/
-
-	
-	
-	
-	// while( freeList[]!= NULL){		
-	// 	size_t next_order_size = blockList[buddyHeap.currBLIdx].size/2; //TODO: fix to correct variable for Block size
-		
-	// 	// If current block size is larger than requested size and it is free, split
-	// 	if (!blockList[buddyHeap.currBLIdx].isAllocated && blockList[buddyHeap.currBLIdx].size >= size){
-	// 		// if the size fits into the order's block size, allocate a new block 
-	// 		uint32_t newBlockIdx = buddyHeap.currBLIdx +1; // TODO: +1 for now
-
-	// 		// Add first buddy block to free list, initalized as free
-	// 		blockList[newBlockIdx].type = FREE;
-	// 		blockList[newBlockIdx].size = next_order_size;
-	// 		blockList[newBlockIdx].TIDofOwner = kernelVariables.currentRunningTID; // fix
-	// 		blockList[newBlockIdx].startingAddress = blockList[buddyHeap.currBLIdx].size - blockList[newBlockIdx].size + 1;
-	// 		blockList[newBlockIdx]->next = blockList[buddyHeap.currBLIdx];
-			
-	// 		bitArray[newBlockIdx].type = FREE;
-	// 		freeList[newBlockIdx] = blockList[newBlockIdx];
-
-	// 		blockList[buddyHeap.currBLIdx].size = mult4size;
-
-	// 		// Second buddy block is allocated and linked
-	// 		blockList[buddyHeap.currBLIdx].isAllocated = USED;
-	// 		bitArray[buddyHeap.currBLIdx].type = USED;
-	// 		blockList[buddyHeap.currBLIdx]->next = blockList[newBlockIdx];
-
-	// 		// remove from free list
-
-	// 		// returns pointer to the start of the usable memory in the block/ allocated memory
-	// 		return (void *)blockList[buddyHeap.currBLIdx];
-	// 	}
-
-	// 	buddyHeap.currBLIdx++; // or instead move to the next element in the block list. 
-	// }
-	// return NULL;
 }
