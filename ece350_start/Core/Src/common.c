@@ -74,7 +74,7 @@ U32 Calculate_Free_List_Idx(U32 num) {
 	return index;
 }
 
-Block* Free_List_Push(Block* newBlock, U32 freeListIdx){
+void Free_List_Push(Block* newBlock, U32 freeListIdx){
 	// Push created buddy block to the free list
 	newBlock->prev = NULL;
 
@@ -86,8 +86,6 @@ Block* Free_List_Push(Block* newBlock, U32 freeListIdx){
 	}
 
 	buddyHeap.freeList[freeListIdx] = newBlock;
-
-	return newBlock;
 }
 
 Block* Free_List_Pop(U32 freeListIdx){
@@ -112,22 +110,14 @@ Block* Split_Block(Block* parentBlock){
 	U32 parentFreeListIdx = Calculate_Free_List_Idx(parentBlock->size);
 
 	// Push created buddy block to the free list
-	createdBlock->prev = NULL;
-
-	createdBlock->next = buddyHeap.freeList[parentFreeListIdx];
-
-	if(buddyHeap.freeList[parentFreeListIdx] != NULL){
-		buddyHeap.freeList[parentFreeListIdx]->prev = createdBlock;
-	}
-
-	buddyHeap.freeList[parentFreeListIdx] = createdBlock;
+	Free_List_Push(createdBlock, parentFreeListIdx);
 
 	// Set parent as used and remove from free list
 	parentBlock->type = USED;
 	parentBlock->size = (parentBlock->size)/2;
 
 	// Remove parent block for free list
-	buddyHeap.freeList[parentFreeListIdx] = buddyHeap.freeList[parentFreeListIdx]->next;
+	Block* poppedBlock = Free_List_Pop(parentFreeListIdx);
 
 	// Return pointer to allocated block
 	return parentBlock;

@@ -148,7 +148,7 @@ U32 Calculate_Free_List_Idx(U32 num);
 
 Block* Split_Block(Block* parentBlock);
 
-Block* Free_List_Push(Block* newBlock, U32 freeListIdx);
+void Free_List_Push(Block* newBlock, U32 freeListIdx);
 
 Block* Free_List_Pop(U32 freeListIdx);
 
