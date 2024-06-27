@@ -86,7 +86,8 @@ void osInitBuddyHeap(void) {
 		buddyHeap.bitArray[i] = 0;
 	}
 
-	Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
+	Block* initial_block = Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
+	Free_List_Push(initial_block);
 }
 
 
@@ -94,39 +95,40 @@ void* k_mem_alloc(size_t size)
 {
 	// check that k_mem_init was called and successfully initialized the heap
 	// Return null if the number of bytes requested is 0 or if heap is not initialized
-	if(!kernelVariables.buddyHeapInit || !kernelVariables.kernelInitRan|| size == 0){
+	if(!kernelVariables.buddyHeapInit || !kernelVariables.kernelInitRan || size == 0){
 		return NULL;
 	}
 
 	uint32_t required_size = size + sizeof(Block);
 
-	U32 required_idx = Calculate_Free_List_Idx(required_size);
+	U32 required_order = Calculate_Order(required_size); 
+	U32 required_idx = Calculate_Free_List_Idx(required_order);
 
 	// the requested size is too large
 	if(required_idx < 0){
 		return NULL;
 	}
 
-	U32 smallest_av_block_idx = required_idx;
+	U32 smallest_all_block_idx = required_idx;
 
 	// Iterate through the free list to find the smallest available block already allocated/ not empty
-	while(smallest_av_block_idx >= 0){
+	while(smallest_all_block_idx >= 0){
 		// Save the index of the first block that is free
-		if(buddyHeap.freeList[smallest_av_block_idx]!= NULL && buddyHeap.freeList[smallest_av_block_idx].type == FREE){
+		if(buddyHeap.freeList[smallest_all_block_idx]!= NULL && buddyHeap.freeList[smallest_all_block_idx].type == FREE){
 			break;
 		}
 
 		// Decrease level until non-empty list is found
-		smallest_av_block_idx--;
+		smallest_all_block_idx--;
 	}
 
 	// If there is no free block, allocation fails
-	if(smallest_av_block_idx == -1){
+	if(smallest_all_block_idx == -1){
 		return NULL;
 	}
 
-	Block* curr_block = buddyHeap.freeList[smallest_av_block_idx];
-	U32 num_splits_req = smallest_av_block_idx-required_idx;
+	Block* curr_block = buddyHeap.freeList[smallest_all_block_idx];
+	U32 num_splits_req = required_idx - smallest_all_block_idx;
 
 	// Split the head of the list until the level of the required index is reached
 	for(U32 i = 0; i< num_splits_req; i++){
@@ -140,18 +142,4 @@ void* k_mem_alloc(size_t size)
 	}
 
 	return NULL;
-
-
-	/* Start at free list 
-	// Calculate order of required block
-	While loop: Check which size is large enough to fit the requested size to get the order
-	- Calc corresponding index in free list
-
-	While: use the free list index and subtract to get to the 
-	- Iterate up the free list to find smallest available block
-	- check if the required size is able to fit into that block (choosing the smallest satisfactory)
-	- If block is free then split
-
-	Var: counts number of orders moved up to get the number of splits required or compare req size to current order level block size to know when to stop splitting and create the block
-	*/
 }

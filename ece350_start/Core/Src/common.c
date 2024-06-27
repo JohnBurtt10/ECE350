@@ -64,11 +64,10 @@ U32 Calculate_Order(U32 num) {
 	return result;
 }
 
-U32 Calculate_Free_List_Idx(U32 num) {
-	U32 order = CalculateOrder(num);
+U32 Calculate_Free_List_Idx(U32 order) {
 	U32 index = MAX_ORDER + MIN_BLOCK_ORDER - order;
 
-	if(index >MAX_ORDER){
+	if(index > MAX_ORDER){
 		index = MAX_ORDER;
 	}
 	return index;
@@ -103,11 +102,12 @@ Block* Free_List_Pop(U32 freeListIdx){
 }
 
 Block* Split_Block(Block* parentBlock){
-	Block* createdBlock = (Block*)(FREE, parentBlock.size/2 + sizeof (Block), kernelVariables.currentRunningTID, parentBlock.startingAddress+ parentBlock.size/2 + sizeof(Block), parentBlock);
-	// Block* newBlock = Create_Block(parentBlock->size, parentBlock->startingAddress + parentBlock->size/2, FREE, kernelVariables.currentRunningTID);
+	U32 parentOrder = Calculate_Order(parentBlock->size);
+	U32 buddy_addr = parentBlock ^ (XOR) (1 << parentOrder + MIN_BLOCK_ORDER);
+	Block* createdBlock = Create_Block(parentBlock->size, buddy_addr, FREE, kernelVariables.currentRunningTID);
 
 	// Find corresponding free list index using order
-	U32 parentFreeListIdx = Calculate_Free_List_Idx(parentBlock->size);
+	U32 parentFreeListIdx = Calculate_Free_List_Idx(parentOrder);
 
 	// Push created buddy block to the free list
 	Free_List_Push(createdBlock, parentFreeListIdx);
@@ -115,8 +115,6 @@ Block* Split_Block(Block* parentBlock){
 	// Set parent as used and remove from free list
 	parentBlock->type = USED;
 	parentBlock->size = (parentBlock->size)/2;
-
-	// Remove parent block for free list
 	Block* poppedBlock = Free_List_Pop(parentFreeListIdx);
 
 	// Return pointer to allocated block
