@@ -10,6 +10,14 @@
 
 uint32_t* current_MSP = NULL;
 
+// Count leading zeros
+__attribute__((always_inline))
+inline U32 CLZ(U32 num) {
+	U32 output = 0;
+	__asm("CLZ %0, %1": "=r" (output): "r" (num));
+	return output;
+}
+
 uint32_t* Get_MSP_INIT_VAL(){
 	return *(uint32_t**)0x0;
 }
@@ -42,18 +50,29 @@ int Scheduler(void) {
 }
 
 Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
+
+	// Ensure size is not greater than our max order, and round to nearest power of 2 and multiple of 32.
+	U32 newSize = 0;
+	if (size > (1 << (MAX_ORDER + MIN_BLOCK_ORDER))){
+		newSize = (1 << (MAX_ORDER + MIN_BLOCK_ORDER));
+	} else {
+		newSize = 2 << (32 - CLZ(size - 1) - 1);
+	}
+
+	DEBUG_PRINTF("Given Size: %d. Rounded Size: %d\r\n", size, newSize);
+
 	Block temp = {
 				.type = type,
 				.TIDofOwner = tidOwner,
 				.next = NULL,
-				.size = (((size + sizeof(Block)) + 31)/32) * 32, //https://piazza.com/class/lvlcv9pc4496o8/post/177
+				.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
 				.magicNum = MAGIC_NUMBER_BLOCK
 	};
 
 	*(Block*) heapAddress = temp;
-	buddyHeap.blockList[buddyHeap.currentBlockListSize] = (Block*) heapAddress;
-
-	buddyHeap.currentBlockListSize += 1;
+//	buddyHeap.blockList[buddyHeap.currentBlockListSize] = (Block*) heapAddress;
+//
+//	buddyHeap.currentBlockListSize += 1;
 
 	return (Block*)heapAddress;
 }
