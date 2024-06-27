@@ -74,30 +74,59 @@ U32 Calculate_Free_List_Idx(U32 num) {
 	return index;
 }
 
+Block* Free_List_Push(Block* newBlock, U32 freeListIdx){
+	// Push created buddy block to the free list
+	newBlock->prev = NULL;
+
+	newBlock->next = buddyHeap.freeList[freeListIdx];
+
+	// list contains more than 0 elements
+	if(buddyHeap.freeList[freeListIdx] != NULL){
+		buddyHeap.freeList[freeListIdx]->prev = newBlock;
+	}
+
+	buddyHeap.freeList[freeListIdx] = newBlock;
+
+	return newBlock;
+}
+
+Block* Free_List_Pop(U32 freeListIdx){
+	Block *popped_block;
+
+	if(buddyHeap.freeList[freeListIdx] == NULL){
+		return NULL;
+	}
+
+	popped_block = buddyHeap.freeList[freeListIdx];
+	buddyHeap.freeList[freeListIdx] = buddyHeap.freeList[freeListIdx]->next;
+	// buddyHeap.freeList[freeListIdx]->prev = NULL;
+
+	return popped_block;
+}
+
 Block* Split_Block(Block* parentBlock){
 	Block* createdBlock = (Block*)(FREE, parentBlock.size/2 + sizeof (Block), kernelVariables.currentRunningTID, parentBlock.startingAddress+ parentBlock.size/2 + sizeof(Block), parentBlock);
 	// Block* newBlock = Create_Block(parentBlock->size, parentBlock->startingAddress + parentBlock->size/2, FREE, kernelVariables.currentRunningTID);
 
 	// Find corresponding free list index using order
 	U32 parentFreeListIdx = Calculate_Free_List_Idx(parentBlock->size);
-	// U32 parentOrder = CalculateOrder(parentBlock.size);
-	// U32 parentFreeListIdx = -parentOrder + MAX_ORDER + MIN_BLOCK_ORDER;
-
-	// TODO: turn into doubly linked list
 
 	// Push created buddy block to the free list
-	createdBlock->next = buddyHeap.freeList[parentFreeListIdx];
-	buddyHeap.freeList[parentFreeListIdx] = createdBlock;
+	createdBlock->prev = NULL;
 
-	// createdBlock->next = buddyHeap.freeList[parentFreeListIdx]->next;
-	// buddyHeap.freeList[parentFreeListIdx]->next = createdBlock;
+	createdBlock->next = buddyHeap.freeList[parentFreeListIdx];
+
+	if(buddyHeap.freeList[parentFreeListIdx] != NULL){
+		buddyHeap.freeList[parentFreeListIdx]->prev = createdBlock;
+	}
+
+	buddyHeap.freeList[parentFreeListIdx] = createdBlock;
 
 	// Set parent as used and remove from free list
 	parentBlock->type = USED;
 	parentBlock->size = (parentBlock->size)/2;
 
 	// Remove parent block for free list
-	// Block* temp = buddyHeap.freeList[parentFreeListIdx];
 	buddyHeap.freeList[parentFreeListIdx] = buddyHeap.freeList[parentFreeListIdx]->next;
 
 	// Return pointer to allocated block

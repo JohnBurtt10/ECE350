@@ -121,7 +121,7 @@ void* k_mem_alloc(size_t size)
 	}
 
 	// If there is no free block, allocation fails
-	if(smallest_av_block_idx ==-1 ){
+	if(smallest_av_block_idx == -1){
 		return NULL;
 	}
 
