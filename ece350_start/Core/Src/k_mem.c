@@ -141,7 +141,7 @@ void* k_mem_alloc(size_t size)
 	// Split the head of the list until the level of the required index is reached
 	for(U32 i = 0; i< num_splits_req; i++){
 		curr_block = Split_Block(curr_block);
-		DEBUG_PRINTF("Splitting\r\n");
+		DEBUG_PRINTF("Splitting %d\r\n", i);
 
 		if(i == num_splits_req){
 			// return pointer to the allocated memory block

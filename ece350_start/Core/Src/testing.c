@@ -95,6 +95,7 @@ int main(void)
     DEBUG_PRINTF("Free list index of %d: %d\r\n", block_size, test_index);
 
     k_mem_alloc(block_size);
+    k_mem_alloc(block_size);
 
     DEBUG_PRINTF("Finished Mem_Alloc");
     buddyHeap.freeList[test_index];

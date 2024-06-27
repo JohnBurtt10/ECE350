@@ -93,6 +93,7 @@ U32 Calculate_Free_List_Idx(U32 order) {
 	if(index > MAX_ORDER){
 		index = MAX_ORDER;
 	}
+	
 	return index;
 }
 
