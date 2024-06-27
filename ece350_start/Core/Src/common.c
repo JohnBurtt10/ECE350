@@ -64,12 +64,16 @@ Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
 	Block temp = {
 				.type = type,
 				.TIDofOwner = tidOwner,
+				.startingAddress = (U32) heapAddress,
 				.next = NULL,
+				.prev = NULL,
 				.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
 				.magicNum = MAGIC_NUMBER_BLOCK
 	};
 
+	DEBUG_PRINTF("Address: %p\r\n", heapAddress);
 	*(Block*) heapAddress = temp;
+
 //	buddyHeap.blockList[buddyHeap.currentBlockListSize] = (Block*) heapAddress;
 //
 //	buddyHeap.currentBlockListSize += 1;
@@ -122,19 +126,29 @@ Block* Free_List_Pop(U32 freeListIdx){
 
 Block* Split_Block(Block* parentBlock){
 	U32 parentOrder = Calculate_Order(parentBlock->size);
-	U32 buddy_addr = parentBlock ^ (XOR) (1 << parentOrder + MIN_BLOCK_ORDER);
-	Block* createdBlock = Create_Block(parentBlock->size, buddy_addr, FREE, kernelVariables.currentRunningTID);
+//	U32 buddy_addr = (int)parentBlock ^ (1 << (parentOrder-1));
+	U32 newSize = parentBlock->size/2;
+//	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock->startingAddress);
+	Block* createdBlock = Create_Block(newSize, (void*) (parentBlock->startingAddress + newSize), FREE, kernelVariables.currentRunningTID);
 
-	// Find corresponding free list index using order
+//	Block* createdBlock = Create_Block(parentBlock->size/2, buddy_addr, FREE, kernelVariables.currentRunningTID);
+
+	// Find corresponding free list index using ordere
 	U32 parentFreeListIdx = Calculate_Free_List_Idx(parentOrder);
+	DEBUG_PRINTF("Splitting parent with free list index: %d\r\n", parentFreeListIdx);
 
+	// DEBUG_PRINTF("Current head of free list: %d has size %d\r\n", parentFreeListIdx, buddyHeap.freeList[parentFreeListIdx]);
+
+	U32 createdIndex = Calculate_Free_List_Idx(parentOrder-1);
 	// Push created buddy block to the free list
-	Free_List_Push(createdBlock, parentFreeListIdx);
+	Free_List_Push(createdBlock, createdIndex);
 
 	// Set parent as used and remove from free list
 	parentBlock->type = USED;
 	parentBlock->size = (parentBlock->size)/2;
 	Block* poppedBlock = Free_List_Pop(parentFreeListIdx);
+
+//	DEBUG_PRINTF("Pushed buddy address: %d\r\n", buddy_addr);
 
 	// Return pointer to allocated block
 	return parentBlock;

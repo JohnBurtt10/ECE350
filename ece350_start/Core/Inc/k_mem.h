@@ -36,4 +36,6 @@ int k_mem_init(void);
 
 int k_mem_count_(size_t size);
 
+void* k_mem_alloc(size_t size);
+
 #endif /* INC_K_MEM_H_ */

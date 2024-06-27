@@ -93,7 +93,7 @@ void osInitBuddyHeap(void) {
 	}
 
 	Block* initial_block = Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
-	Free_List_Push(initial_block);
+	Free_List_Push(initial_block, 0);
 }
 
 
@@ -115,30 +115,33 @@ void* k_mem_alloc(size_t size)
 		return NULL;
 	}
 
-	U32 smallest_all_block_idx = required_idx;
+	U32 smallest_avail_block_idx = required_idx;
 
 	// Iterate through the free list to find the smallest available block already allocated/ not empty
-	while(smallest_all_block_idx >= 0){
+	while(smallest_avail_block_idx >= 0){
 		// Save the index of the first block that is free
-		if(buddyHeap.freeList[smallest_all_block_idx]!= NULL && buddyHeap.freeList[smallest_all_block_idx].type == FREE){
+		if(buddyHeap.freeList[smallest_avail_block_idx]!= NULL && buddyHeap.freeList[smallest_avail_block_idx]->type == FREE){
 			break;
 		}
 
 		// Decrease level until non-empty list is found
-		smallest_all_block_idx--;
+		smallest_avail_block_idx--;
 	}
 
+	DEBUG_PRINTF("Smallest free block order: %d, index: %d\r\n", required_order, required_idx);
+
 	// If there is no free block, allocation fails
-	if(smallest_all_block_idx == -1){
+	if(smallest_avail_block_idx == -1){
 		return NULL;
 	}
 
-	Block* curr_block = buddyHeap.freeList[smallest_all_block_idx];
-	U32 num_splits_req = required_idx - smallest_all_block_idx;
+	Block* curr_block = buddyHeap.freeList[smallest_avail_block_idx];
+	U32 num_splits_req = required_idx - smallest_avail_block_idx;
 
 	// Split the head of the list until the level of the required index is reached
 	for(U32 i = 0; i< num_splits_req; i++){
 		curr_block = Split_Block(curr_block);
+		DEBUG_PRINTF("Splitting\r\n");
 
 		if(i == num_splits_req){
 			// return pointer to the allocated memory block
