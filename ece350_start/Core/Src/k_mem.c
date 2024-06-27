@@ -137,6 +137,8 @@ void* k_mem_alloc(size_t size)
 
 	Block* curr_block = buddyHeap.freeList[smallest_avail_block_idx];
 	U32 num_splits_req = required_idx - smallest_avail_block_idx;
+	DEBUG_PRINTF("Num of splits required for size: %d\r\n", num_splits_req);\
+	U32 current_index = smallest_avail_block_idx;
 
 	// Split the head of the list until the level of the required index is reached
 	for(U32 i = 0; i< num_splits_req; i++){
@@ -144,10 +146,14 @@ void* k_mem_alloc(size_t size)
 		DEBUG_PRINTF("Splitting %d\r\n", i);
 
 		if(i == num_splits_req){
+			DEBUG_PRINTF("Finished allocating\r\n");
 			// return pointer to the allocated memory block
 			return (void*)curr_block;
 		}
-		curr_block = curr_block->next;
+		DEBUG_PRINTF("Current block: %p\r\n", curr_block->startingAddress);
+		current_index++;
+		curr_block = buddyHeap.freeList[current_index];
+		DEBUG_PRINTF("Next block: %p\r\n", curr_block->startingAddress);
 	}
 
 	return NULL;
