@@ -86,9 +86,23 @@ int main(void)
 //	DEBUG_PRINTF("First Block TID of Owner: %d\r\n", firstBlock->TIDofOwner);
 //	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
 //	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
+    int block_size = 32;
 
-	int test = Calculate_Order(32);
+	int test = Calculate_Order(block_size);
 	DEBUG_PRINTF("Order of 32: %d\r\n", test);
+
+    int test_index = Calculate_Free_List_Idx(test);
+    DEBUG_PRINTF("Free list index of %d: %d\r\n", block_size, test_index);
+
+    k_mem_alloc(block_size);
+    k_mem_alloc(block_size);
+
+    DEBUG_PRINTF("Finished Mem_Alloc");
+    buddyHeap.freeList[test_index];
+
+    // Block* test_block = Create_Block(32, , FREE, kernelVariables.currentRunningTID);
+
+    // Split_Block();
 	while (1)
 	{
 		/* USER CODE END WHILE */
