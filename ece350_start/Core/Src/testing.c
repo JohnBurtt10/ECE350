@@ -68,26 +68,26 @@ int main(void)
 //
 //	osKernelStart();
 
-	Block* firstBlock = buddyHeap.blockList[0];
+//	Block* firstBlock = buddyHeap.blockList[0];
 
-	DEBUG_PRINTF("Image end: %x\r\n", &_img_end);
-	DEBUG_PRINTF("EStack: %x\r\n", &_estack);
-	DEBUG_PRINTF("Min Stack Size: %x\r\n", &_Min_Stack_Size);
-	DEBUG_PRINTF("Start address: %x\r\n", kernelVariables.startOfHeap);
-	DEBUG_PRINTF("End address: %x\r\n", kernelVariables.endOfHeap);
-	DEBUG_PRINTF("Size of Heap: %d bytes\r\n", kernelVariables.endOfHeap - kernelVariables.startOfHeap);
-	DEBUG_PRINTF("Size of KernelVariables: %d\r\n", sizeof(Kernel_Variables));
-	DEBUG_PRINTF("Size of TCB: %d\r\n", sizeof(TCB));
-	DEBUG_PRINTF("Size of Block: %d\r\n", sizeof(Block));
-	DEBUG_PRINTF("Size of BuddyHeap: %d\r\n", sizeof(BuddyHeap));
-	DEBUG_PRINTF("First Block Address: %x\r\n", firstBlock);
-	DEBUG_PRINTF("First Block Type: %d\r\n", firstBlock->type);
-	DEBUG_PRINTF("First Block Size: %d bytes \r\n", firstBlock->size);
-	DEBUG_PRINTF("First Block TID of Owner: %d\r\n", firstBlock->TIDofOwner);
-	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
-	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
+//	DEBUG_PRINTF("Image end: %x\r\n", &_img_end);
+//	DEBUG_PRINTF("EStack: %x\r\n", &_estack);
+//	DEBUG_PRINTF("Min Stack Size: %x\r\n", &_Min_Stack_Size);
+//	DEBUG_PRINTF("Start address: %x\r\n", kernelVariables.startOfHeap);
+//	DEBUG_PRINTF("End address: %x\r\n", kernelVariables.endOfHeap);
+//	DEBUG_PRINTF("Size of Heap: %d bytes\r\n", kernelVariables.endOfHeap - kernelVariables.startOfHeap);
+//	DEBUG_PRINTF("Size of KernelVariables: %d\r\n", sizeof(Kernel_Variables));
+//	DEBUG_PRINTF("Size of TCB: %d\r\n", sizeof(TCB));
+//	DEBUG_PRINTF("Size of Block: %d\r\n", sizeof(Block));
+//	DEBUG_PRINTF("Size of BuddyHeap: %d\r\n", sizeof(BuddyHeap));
+//	DEBUG_PRINTF("First Block Address: %x\r\n", firstBlock);
+//	DEBUG_PRINTF("First Block Type: %d\r\n", firstBlock->type);
+//	DEBUG_PRINTF("First Block Size: %d bytes \r\n", firstBlock->size);
+//	DEBUG_PRINTF("First Block TID of Owner: %d\r\n", firstBlock->TIDofOwner);
+//	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
+//	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
 
-	int test = Calculate_Order(512);
+	int test = Calculate_Order(32);
 	DEBUG_PRINTF("Order of 32: %d\r\n", test);
 	while (1)
 	{

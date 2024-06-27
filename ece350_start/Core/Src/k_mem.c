@@ -70,6 +70,12 @@ int k_mem_init(void) {
 	return RTX_OK;
 }
 
+int k_mem_count_(size_t size) {
+	// Determine Order
+
+	return RTX_ERR;
+}
+
 
 void osInitBuddyHeap(void) {
 	buddyHeap.currentBlockListSize = 0;
