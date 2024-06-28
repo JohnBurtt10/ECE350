@@ -145,9 +145,9 @@ Block* Split_Block(Block* parentBlock){
 	Free_List_Push(createdBlock, createdIndex);
 
 	// Set parent as used and remove from free list
-	parentBlock->type = USED;
 	parentBlock->size = (parentBlock->size)/2;
 	Block* poppedBlock = Free_List_Pop(parentFreeListIdx);
+	Free_List_Push(parentBlock, createdIndex);
 
 //	DEBUG_PRINTF("Pushed buddy address: %d\r\n", buddy_addr);
 

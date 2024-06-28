@@ -106,6 +106,7 @@ void* k_mem_alloc(size_t size)
 	}
 
 	uint32_t required_size = size + sizeof(Block);
+	DEBUG_PRINTF("Required size: %d, sizeof(Block)= %d\r\n", required_size, sizeof(Block));
 
 	U32 required_order = Calculate_Order(required_size); 
 	U32 required_idx = Calculate_Free_List_Idx(required_order);

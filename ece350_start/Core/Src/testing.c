@@ -96,6 +96,7 @@ int main(void)
 
     k_mem_alloc(block_size);
     k_mem_alloc(block_size);
+    k_mem_alloc(62);
 
     DEBUG_PRINTF("Finished Mem_Alloc");
     buddyHeap.freeList[test_index];
