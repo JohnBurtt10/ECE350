@@ -94,12 +94,23 @@ int main(void)
     int test_index = Calculate_Free_List_Idx(test);
     DEBUG_PRINTF("Free list index of %d: %d\r\n", block_size, test_index);
 
-    k_mem_alloc(block_size);
-    k_mem_alloc(block_size);
-    k_mem_alloc(62);
+    void* malloc_ptr1 = k_mem_alloc(block_size);
+    void* malloc_ptr2 = k_mem_alloc(block_size);
+    void* malloc_ptr3 = k_mem_alloc(62);
+    void* malloc_ptr4 = k_mem_alloc(640000);
+    void* malloc_ptr5 = k_mem_alloc(128);
+    void* malloc_ptr6 = k_mem_alloc(2);
 
-    DEBUG_PRINTF("Finished Mem_Alloc");
-    buddyHeap.freeList[test_index];
+    DEBUG_PRINTF("malloc_ptr1: %x, size: %d\r\n", malloc_ptr1, block_size);
+    DEBUG_PRINTF("malloc_ptr2: %x, size: %d\r\n", malloc_ptr2, block_size);
+    DEBUG_PRINTF("malloc_ptr3: %x, size: %d\r\n", malloc_ptr3, 62);
+    DEBUG_PRINTF("malloc_ptr4: %x, size: %d\r\n", malloc_ptr4, 640000);
+    DEBUG_PRINTF("malloc_ptr5: %x, size: %d\r\n", malloc_ptr5, 128);
+    DEBUG_PRINTF("malloc_ptr5: %x, size: %d\r\n", malloc_ptr6, 2);
+
+    DEBUG_PRINTF("Finished Mem_Alloc\r\n");
+
+    // buddyHeap.freeList[test_index];
 
     // Block* test_block = Create_Block(32, , FREE, kernelVariables.currentRunningTID);
 

@@ -87,13 +87,13 @@ U32 Calculate_Order(U32 num) {
 	return result;
 }
 
-U32 Calculate_Free_List_Idx(U32 order) {
-	U32 index = MAX_ORDER + MIN_BLOCK_ORDER - order;
+int Calculate_Free_List_Idx(U32 order) {
+	int index = MAX_ORDER + MIN_BLOCK_ORDER - order;
 
 	if(index > MAX_ORDER){
 		index = MAX_ORDER;
 	}
-	
+
 	return index;
 }
 
@@ -120,7 +120,7 @@ Block* Free_List_Pop(U32 freeListIdx){
 
 	popped_block = buddyHeap.freeList[freeListIdx];
 	buddyHeap.freeList[freeListIdx] = buddyHeap.freeList[freeListIdx]->next;
-	// buddyHeap.freeList[freeListIdx]->prev = NULL;
+	buddyHeap.freeList[freeListIdx]->prev = NULL;
 
 	return popped_block;
 }
@@ -132,7 +132,7 @@ Block* Split_Block(Block* parentBlock){
 //	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock->startingAddress);
 	Block* createdBlock = Create_Block(newSize, (void*) (parentBlock->startingAddress + newSize), FREE, kernelVariables.currentRunningTID);
 
-//	Block* createdBlock = Create_Block(parentBlock->size/2, buddy_addr, FREE, kernelVariables.currentRunningTID);
+//	Block* createdBlock = Create_Block(newSize, buddy_addr, FREE, kernelVariables.currentRunningTID);
 
 	// Find corresponding free list index using ordere
 	U32 parentFreeListIdx = Calculate_Free_List_Idx(parentOrder);
