@@ -10,14 +10,6 @@
 
 uint32_t* current_MSP = NULL;
 
-// Count leading zeros
-__attribute__((always_inline))
-inline U32 CLZ(U32 num) {
-	U32 output = 0;
-	__asm("CLZ %0, %1": "=r" (output): "r" (num));
-	return output;
-}
-
 uint32_t* Get_MSP_INIT_VAL(){
 	return *(uint32_t**)0x0;
 }
@@ -47,38 +39,6 @@ int Scheduler(void) {
 	
 	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
 	return TIDTaskToRun;
-}
-
-Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
-
-	// Ensure size is not greater than our max order, and round to nearest power of 2 and multiple of 32.
-	U32 newSize = 0;
-	if (size > (1 << (MAX_ORDER + MIN_BLOCK_ORDER))){
-		newSize = (1 << (MAX_ORDER + MIN_BLOCK_ORDER));
-	} else {
-		newSize = 2 << (32 - CLZ(size - 1) - 1);
-	}
-
-	DEBUG_PRINTF("Given Size: %d. Rounded Size: %d\r\n", size, newSize);
-
-	Block temp = {
-				.type = type,
-				.TIDofOwner = tidOwner,
-				.startingAddress = (U32) heapAddress,
-				.next = NULL,
-				.prev = NULL,
-				.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
-				.magicNum = MAGIC_NUMBER_BLOCK
-	};
-
-	DEBUG_PRINTF("Address: %p\r\n", heapAddress);
-	*(Block*) heapAddress = temp;
-
-//	buddyHeap.blockList[buddyHeap.currentBlockListSize] = (Block*) heapAddress;
-//
-//	buddyHeap.currentBlockListSize += 1;
-
-	return (Block*)heapAddress;
 }
 
 U32 Calculate_Order(U32 num) {
@@ -125,32 +85,96 @@ Block* Free_List_Pop(U32 freeListIdx){
 	return popped_block;
 }
 
-Block* Split_Block(Block* parentBlock){
-	U32 parentOrder = Calculate_Order(parentBlock->size);
-//	U32 buddy_addr = (int)parentBlock ^ (1 << (parentOrder-1));
-	U32 newSize = parentBlock->size/2;
-//	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock->startingAddress);
-	Block* createdBlock = Create_Block(newSize, (void*) (parentBlock->startingAddress + newSize), FREE, kernelVariables.currentRunningTID);
+void Coalesce_Block(Block* parentBlock, Block* buddyBlock) {
+	// Remove the buddyBlock from the free list
+	U32 buddyOrder = Calculate_Order(buddyBlock->size);
+	U32 buddyIdx = Calculate_Free_List_Idx(buddyOrder);
+	Block* prevBlockOfBuddy = buddyBlock->prev;
+	Block* nextBlockOfBuddy = buddyBlock->next;
 
-//	Block* createdBlock = Create_Block(newSize, buddy_addr, FREE, kernelVariables.currentRunningTID);
+	// Check if the buddy block is not the head
+	if (prevBlockOfBuddy != NULL) {
+		prevBlockOfBuddy->next = nextBlockOfBuddy;
+	} else {
+		Free_List_Pop(buddyIdx);
+	}
 
-	// Find corresponding free list index using ordere
-	U32 parentFreeListIdx = Calculate_Free_List_Idx(parentOrder);
-	DEBUG_PRINTF("Splitting parent with free list index: %d\r\n", parentFreeListIdx);
+	// Check if the buddy block is not the tail of the list
+	if (nextBlockOfBuddy != NULL) {
+		nextBlockOfBuddy->prev = prevBlockOfBuddy;
+	}
 
-	// DEBUG_PRINTF("Current head of free list: %d has size %d\r\n", parentFreeListIdx, buddyHeap.freeList[parentFreeListIdx]);
+	Empty_Block(buddyBlock);
 
-	U32 createdIndex = Calculate_Free_List_Idx(parentOrder-1);
-	// Push created buddy block to the free list
-	Free_List_Push(createdBlock, createdIndex);
+	// Update the size of the parentBlock
+	U32 oldParentOrder = Calculate_Order(parentBlock->size);
+	U32 oldParentIdx = Calculate_Free_List_Idx(oldParentOrder);
+	parentBlock->size = parentBlock->size * 2;
+	U32 newParentOrder = Calculate_Order(parentBlock->size);
+	U32 newParentIdx = Calculate_Free_List_Idx(newParentOrder);
 
-	// Set parent as used and remove from free list
-	parentBlock->size = (parentBlock->size)/2;
-	Block* poppedBlock = Free_List_Pop(parentFreeListIdx);
-	Free_List_Push(parentBlock, createdIndex);
+	// Update the parentBlock in the free list
+	//   1) Remove the parentBlock in the free list
+	//   2) Push the parentBlock to the new index in the free list
+	Block* tempBlock = parentBlock;
+	Block* prevBlockOfParent = parentBlock->prev;
+	Block* nextBlockOfParent = parentBlock->next;
 
-//	DEBUG_PRINTF("Pushed buddy address: %d\r\n", buddy_addr);
+	// Check if the parent block is the head
+	if (prevBlockOfParent != NULL) {
+		prevBlockOfParent->next = nextBlockOfParent;
+	} else {
+		Free_List_Pop(oldParentIdx);
+	}
 
-	// Return pointer to allocated block
-	return parentBlock;
+	if (nextBlockOfParent != NULL) {
+		nextBlockOfParent->prev = prevBlockOfParent;
+	}
+
+	Free_List_Push(tempBlock, newParentIdx);
+}
+
+void Empty_Block(Block* block) {
+	block->type = FREE;
+	block->size = 0;
+	block->TIDofOwner = 0;
+	block->startingAddress = 0;
+	block->next = NULL;
+	block->prev = NULL;
+	block->magicNum = 0;
+}
+
+inline Block* Get_Buddy(Block* block) {
+	U32 order = Calculate_Order(block->size);
+	DEBUG_PRINTF("  INFO: Order to get the block address: %d\r\n", order);
+	U32 buddyAddress = 0x0;
+
+	if ((U32)block == kernelVariables.startOfHeap) {
+		buddyAddress = kernelVariables.startOfHeap + block->size;
+	}
+	else if ((U32)block == kernelVariables.endOfHeap - block->size) {
+		buddyAddress = kernelVariables.endOfHeap - block->size;
+	}
+	else {
+		buddyAddress = (U32)(block) ^ (1 << order);
+	}
+
+//	if (buddyAddress > kernelVariables.endOfHeap || buddyAddress < kernelVariables.startOfHeap) {
+//		DEBUG_PRINTF("  ERROR: The buddy address is out of range of the heap: %x\r\n", buddyAddress);
+//		DEBUG_PRINTF("  ERROR: Start Address = %x, End Address = %x, Size = %d", kernelVariables.startOfHeap, kernelVariables.endOfHeap, kernelVariables.endOfHeap - kernelVariables.startOfHeap);
+//		return NULL;
+//	}
+
+	Block* buddy = (Block *)(buddyAddress);
+	DEBUG_PRINTF("  INFO: Block to dealloc address: %x, Buddy address: %x, Block to dealloc size: %d. XOR size value: %d.\r\n", block, buddyAddress, block->size, 1 << order);
+
+//	if (buddy->magicNum == MAGIC_NUMBER_BLOCK) {
+//		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
+//		return buddy;
+//	} else {
+//		DEBUG_PRINTF("  INFO: Invalid buddy address >:(\r\n");
+//		return NULL;
+//	}
+
+	return buddy;
 }
