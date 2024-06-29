@@ -109,17 +109,18 @@ void* k_mem_alloc(size_t size)
 	DEBUG_PRINTF("Required size: %d, sizeof(Block)= %d\r\n", required_size, sizeof(Block));
 
 	U32 required_order = Calculate_Order(required_size); 
-	U32 required_idx = Calculate_Free_List_Idx(required_order);
+	int required_idx = Calculate_Free_List_Idx(required_order);
 
 	// the requested size is too large
 	if(required_idx < 0){
+		DEBUG_PRINTF("Requested size, %d, too large, failed to allocate\r\n\n", size);
 		return NULL;
 	}
 
-	U32 smallest_avail_block_idx = required_idx;
+	int smallest_avail_block_idx = required_idx;
 
 	// Iterate through the free list to find the smallest available block already allocated/ not empty
-	while(smallest_avail_block_idx >= 0 && smallest_avail_block_idx <= MAX_ORDER){
+	while(smallest_avail_block_idx >= 0 ){
 		// Save the index of the first block that is free
 		if(buddyHeap.freeList[smallest_avail_block_idx]!= NULL && buddyHeap.freeList[smallest_avail_block_idx]->type == FREE){
 			break;
@@ -132,7 +133,7 @@ void* k_mem_alloc(size_t size)
 	DEBUG_PRINTF("Smallest free block order: %d, index: %d, smallest free block index: %d\r\n", required_order, required_idx, smallest_avail_block_idx);
 
 	// If there is no free block, allocation fails
-	if(smallest_avail_block_idx == -1){
+	if(smallest_avail_block_idx < 0){
 		return NULL;
 	}
 
@@ -143,28 +144,35 @@ void* k_mem_alloc(size_t size)
 	// If free block is available, remove from the free list and return the address
 	if(num_splits_req == 0){
 		curr_block->type = USED;
+		DEBUG_PRINTF("Free list was %p\r\n",buddyHeap.freeList[smallest_avail_block_idx]->startingAddress);
 		curr_block = Free_List_Pop(smallest_avail_block_idx);
-		DEBUG_PRINTF("Found free block, using it: %p\r\n", curr_block->startingAddress);
+		DEBUG_PRINTF("Free list is now %p\r\n",buddyHeap.freeList[smallest_avail_block_idx]->startingAddress);
+		DEBUG_PRINTF("Found free block, using it: %p\r\n\n", curr_block->startingAddress);
 		return (void*) curr_block;
 	}
 
 
 	U32 current_index = smallest_avail_block_idx;
+	U32 i;
 
 	// Split the head of the list until the level of the required index is reached
-	for(U32 i = 0; i< num_splits_req; i++){
-		curr_block = Split_Block(curr_block);
+	for(i = 0; i< num_splits_req; i++){
 		DEBUG_PRINTF("Splitting %d\r\n", i);
+		curr_block = Split_Block(curr_block);
 
-		if(i == num_splits_req){
-			DEBUG_PRINTF("Finished allocating\r\n");
-			// return pointer to the allocated memory block
-			return (void*)curr_block;
-		}
-		DEBUG_PRINTF("Current block: %p\r\n", curr_block->startingAddress);
+//		DEBUG_PRINTF("Current block: %p\r\n", curr_block->startingAddress);
 		current_index++;
 		curr_block = buddyHeap.freeList[current_index];
-		DEBUG_PRINTF("Next block: %p\r\n", curr_block->startingAddress);
+//		DEBUG_PRINTF("Next block: %p\r\n", curr_block->startingAddress);
+	}
+
+	if(i == num_splits_req){
+		DEBUG_PRINTF("Finished allocating size: %d\r\n\n", size);
+		curr_block = Free_List_Pop(current_index);
+		curr_block->type = USED;
+
+		// return pointer to the allocated memory block
+		return (void*)curr_block;
 	}
 
 	return NULL;
