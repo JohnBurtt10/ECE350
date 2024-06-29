@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-#define DEBUG_ENABLE // Comment me out to disable debugging
+// #define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
@@ -96,6 +96,7 @@ typedef struct kernel_variables {
 #define NUMBER_OF_NODES ((1 << HEIGHT_OF_TREE) - 1)
 #define USED 1
 #define FREE 0
+
 #define MAGIC_NUMBER_BLOCK 0x12345678
 
 typedef struct Block {
@@ -114,6 +115,8 @@ typedef struct BuddyHeap {
 	Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
 	U8 bitArray[NUMBER_OF_NODES];
 } BuddyHeap;
+
+#define ACTUAL_BLOCK(ADDR) ((U32) ADDR - sizeof(Block))
 
 extern Kernel_Variables kernelVariables;
 extern BuddyHeap buddyHeap;
@@ -135,21 +138,18 @@ unsigned int Get_Total_Memory_Used();
 */
 int Scheduler(void);
 
-
-/**
- * @brief: Creates a block given heap address, size of requested malloc, current type and owner.
- * 			NOTE: If requested size will be converted to a multiple of 32 bytes!
- */
-Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner);
-
 U32 Calculate_Order(U32 num);
 
 int Calculate_Free_List_Idx(U32 order);
 
-Block* Split_Block(Block* parentBlock);
-
 void Free_List_Push(Block* newBlock, U32 freeListIdx);
 
 Block* Free_List_Pop(U32 freeListIdx);
+
+void Coalesce_Block(Block* parentBlock, Block* buddyBlock);
+
+void Empty_Block(Block* block);
+
+Block* Get_Buddy(Block* block);
 
 #endif /* INC_COMMON_H_ */
