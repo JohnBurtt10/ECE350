@@ -135,21 +135,4 @@ unsigned int Get_Total_Memory_Used();
 */
 int Scheduler(void);
 
-
-/**
- * @brief: Creates a block given heap address, size of requested malloc, current type and owner.
- * 			NOTE: If requested size will be converted to a multiple of 32 bytes!
- */
-Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner);
-
-U32 Calculate_Order(U32 num);
-
-U32 Calculate_Free_List_Idx(U32 order);
-
-Block* Split_Block(Block* parentBlock);
-
-void Free_List_Push(Block* newBlock, U32 freeListIdx);
-
-Block* Free_List_Pop(U32 freeListIdx);
-
 #endif /* INC_COMMON_H_ */

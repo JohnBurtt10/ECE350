@@ -24,6 +24,7 @@ void Init_Task_2(TCB* task);
 void Init_Task_3(TCB* task);
 void Test_osCreateTask(); // Will fill all tcb's with the same tcb.
 void Print_All_TCBs();
+void Print_Free_List();
 
 void Task_Yield_Exit(void);
 void Task_Yield(void);
@@ -87,19 +88,38 @@ int main(void)
 //	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
 //	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
     int block_size = 32;
-
+//
 	int test = Calculate_Order(block_size);
 	DEBUG_PRINTF("Order of 32: %d\r\n", test);
+
+	Calculate_Nearest_Order(1);
+	Calculate_Nearest_Order(0);
+	Calculate_Nearest_Order(32767);
+	Calculate_Nearest_Order(32768);
+	Calculate_Nearest_Order(32769);
+	Calculate_Nearest_Order(33);
+	Calculate_Nearest_Order(32);
+	Calculate_Nearest_Order(31);
+	Calculate_Nearest_Order(63);
+	Calculate_Nearest_Order(64);
+	Calculate_Nearest_Order(65);
 
     int test_index = Calculate_Free_List_Idx(test);
     DEBUG_PRINTF("Free list index of %d: %d\r\n", block_size, test_index);
 
-    k_mem_alloc(block_size);
-    k_mem_alloc(block_size);
-    k_mem_alloc(62);
+    void* test1 =  k_mem_alloc(block_size);
+    void* test2 = k_mem_alloc(block_size);
+    void* test3 = k_mem_alloc(7000);
+    DEBUG_PRINTF("test1 = %p\r\n", test1);
+    DEBUG_PRINTF("test2 = %p\r\n", test2);
+    DEBUG_PRINTF("test2 = %p\r\n", test3);
 
-    DEBUG_PRINTF("Finished Mem_Alloc");
-    buddyHeap.freeList[test_index];
+    Print_Free_List();
+//    k_mem_alloc(block_size);
+//    k_mem_alloc(62);
+
+    DEBUG_PRINTF("Finished Mem_Alloc\r\n");
+//    buddyHeap.freeList[test_index];
 
     // Block* test_block = Create_Block(32, , FREE, kernelVariables.currentRunningTID);
 
@@ -110,6 +130,16 @@ int main(void)
 		/* USER CODE BEGIN 3 */
 	}
 	/* USER CODE END 3 */
+}
+
+void Print_Free_List() {
+	for (int i = 0; i < MAX_ORDER; i++) {
+		Block* currentBlock = buddyHeap.freeList[i];
+		while (currentBlock != NULL) {
+			DEBUG_PRINTF("Block Size: %d, Order: %d\r\n", currentBlock->size, MAX_ORDER - i);
+			currentBlock = currentBlock->next;
+		}
+	}
 }
 
 void Task_Create(void) {

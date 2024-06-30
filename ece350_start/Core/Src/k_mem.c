@@ -23,6 +23,13 @@ Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 
 BuddyHeap buddyHeap;
 
+// Count leading zeros
+__attribute__((always_inline))
+inline U32 CLZ(U32 num) {
+	U32 output = 0;
+	__asm("CLZ %0, %1": "=r" (output): "r" (num));
+	return output;
+}
 
 void osKernelInit(void) {
 	osInitTCBArray();
@@ -101,71 +108,183 @@ void* k_mem_alloc(size_t size)
 {
 	// check that k_mem_init was called and successfully initialized the heap
 	// Return null if the number of bytes requested is 0 or if heap is not initialized
-	if(!kernelVariables.buddyHeapInit || !kernelVariables.kernelInitRan || size == 0){
+	if(!kernelVariables.buddyHeapInit || !kernelVariables.kernelInitRan || size <= 0 || size > (1 << (MAX_ORDER + MIN_BLOCK_ORDER))){
 		return NULL;
 	}
 
 	uint32_t required_size = size + sizeof(Block);
 	DEBUG_PRINTF("Required size: %d, sizeof(Block)= %d\r\n", required_size, sizeof(Block));
 
-	U32 required_order = Calculate_Order(required_size); 
-	U32 required_idx = Calculate_Free_List_Idx(required_order);
+//	U32 required_order = Calculate_Order(required_size);
+	// Round to nearest order. Eg, size to allocate = 42 bytes, order should be 6. 2^6 = 64 bytes;
+	U32 required_order = Calculate_Nearest_Order(required_size);
+//	U32 required_idx = Calculate_Free_List_Idx(required_order);
+	U32 required_idx = CALCULATE_FREE_LIST_IDX(required_order);
 
-	// the requested size is too large
-	if(required_idx < 0){
-		return NULL;
+	Block* freeBlock = buddyHeap.freeList[required_idx];
+
+	if (freeBlock != NULL) {
+		freeBlock->type = USED;
+		Free_List_Pop(required_idx);
+		return (void*) ((U32)freeBlock + sizeof(Block));
 	}
 
-	U32 smallest_avail_block_idx = required_idx;
-
 	// Iterate through the free list to find the smallest available block already allocated/ not empty
-	while(smallest_avail_block_idx >= 0 && smallest_avail_block_idx <= MAX_ORDER){
+	U32 currIndex = required_idx;
+	while(currIndex >= 0){
 		// Save the index of the first block that is free
-		if(buddyHeap.freeList[smallest_avail_block_idx]!= NULL && buddyHeap.freeList[smallest_avail_block_idx]->type == FREE){
-			break;
+		Block* currBlock = buddyHeap.freeList[currIndex];
+		if(currBlock != NULL){
+			DEBUG_PRINTF("CurrIndex: %d, required_idx = %d\r\n", currIndex, required_idx);
+			for (size_t i = currIndex; i < required_idx; i++) {
+				DEBUG_PRINTF("Current 'i' Value: %d\r\n", i);
+
+				currBlock = Split_Block(currBlock, i);
+				DEBUG_PRINTF("Splitting %d\r\n", i);
+				DEBUG_PRINTF("current freelist index: %d\r\n", i);
+
+//				DEBUG_PRINTF("Current block: %p\r\n", currBlock->startingAddress);
+//				currBlock = buddyHeap.freeList[i++];
+//				DEBUG_PRINTF("Next block: %p\r\n", currBlock->startingAddress);
+			}
+
+			currBlock = Free_List_Pop(required_idx);
+			currBlock->type = USED;
+			return (void*) ((U32) currBlock + sizeof(Block));
 		}
 
 		// Decrease level until non-empty list is found
-		smallest_avail_block_idx--;
+		currIndex--;
 	}
-
-	DEBUG_PRINTF("Smallest free block order: %d, index: %d, smallest free block index: %d\r\n", required_order, required_idx, smallest_avail_block_idx);
-
-	// If there is no free block, allocation fails
-	if(smallest_avail_block_idx == -1){
-		return NULL;
-	}
-
-	Block* curr_block = buddyHeap.freeList[smallest_avail_block_idx];
-	U32 num_splits_req = required_idx - smallest_avail_block_idx;
-	DEBUG_PRINTF("Num of splits required for size, %d: %d\r\n", size, num_splits_req);
-
-	// If free block is available, remove from the free list and return the address
-	if(num_splits_req == 0){
-		curr_block->type = USED;
-		curr_block = Free_List_Pop(smallest_avail_block_idx);
-		DEBUG_PRINTF("Found free block, using it: %p\r\n", curr_block->startingAddress);
-		return (void*) curr_block;
-	}
-
-
-	U32 current_index = smallest_avail_block_idx;
-
-	// Split the head of the list until the level of the required index is reached
-	for(U32 i = 0; i< num_splits_req; i++){
-		curr_block = Split_Block(curr_block);
-		DEBUG_PRINTF("Splitting %d\r\n", i);
-
-		if(i == num_splits_req){
-			DEBUG_PRINTF("Finished allocating\r\n");
-			// return pointer to the allocated memory block
-			return (void*)curr_block;
-		}
-		DEBUG_PRINTF("Current block: %p\r\n", curr_block->startingAddress);
-		current_index++;
-		curr_block = buddyHeap.freeList[current_index];
-		DEBUG_PRINTF("Next block: %p\r\n", curr_block->startingAddress);
-	}
+	DEBUG_PRINTF("Smallest free block order: %d, index: %d, smallest free block index: %d\r\n", required_order, required_idx, currIndex);
 
 	return NULL;
+}
+
+inline Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
+
+	// Ensure size is not greater than our max order, and round to nearest power of 2 and multiple of 32.
+	U32 newSize = 0;
+	if (size > (1 << (MAX_ORDER + MIN_BLOCK_ORDER))){
+		newSize = (1 << (MAX_ORDER + MIN_BLOCK_ORDER));
+	} else {
+		newSize = 2 << (32 - CLZ(size - 1) - 1);
+	}
+
+	DEBUG_PRINTF("Given Size: %d. Rounded Size: %d\r\n", size, newSize);
+
+	Block temp = {
+				.type = type,
+				.TIDofOwner = tidOwner,
+				.startingAddress = (U32) heapAddress,
+				.next = NULL,
+				.prev = NULL,
+				.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
+				.magicNum = MAGIC_NUMBER_BLOCK
+	};
+
+	DEBUG_PRINTF("Address: %p\r\n", heapAddress);
+	*(Block*) heapAddress = temp;
+
+	return (Block*)heapAddress;
+}
+
+inline void Free_List_Push(Block* newBlock, U32 freeListIdx){
+	// Push created buddy block to the free list
+	newBlock->prev = NULL;
+
+	newBlock->next = buddyHeap.freeList[freeListIdx];
+
+	// list contains more than 0 elements
+	if(buddyHeap.freeList[freeListIdx] != NULL){
+		buddyHeap.freeList[freeListIdx]->prev = newBlock;
+	}
+
+	buddyHeap.freeList[freeListIdx] = newBlock;
+}
+
+inline Block* Free_List_Pop(U32 freeListIdx){
+	Block *popped_block;
+//
+//	if(buddyHeap.freeList[freeListIdx] == NULL){
+//		DEBUG_PRINTF("ATTEMPTED TO POP NULL BLOCK FROM FREELIST\r\n");
+//		return NULL;
+//	}
+
+	popped_block = buddyHeap.freeList[freeListIdx];
+	buddyHeap.freeList[freeListIdx] = buddyHeap.freeList[freeListIdx]->next;
+	buddyHeap.freeList[freeListIdx]->prev = NULL;
+
+	return popped_block;
+}
+
+inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
+//	U32 parentOrder = CALCULATE_ORDER_FROM_FREELIST_IDX(parentFreeListIdx);
+	U32 newSize = parentBlock->size/2;
+	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock->startingAddress);
+
+	// ---- Create block ----
+	Block* createdBlock = (void*) (parentBlock->startingAddress + newSize);
+	Block temp = {
+					.type = FREE,
+					.TIDofOwner = kernelVariables.currentRunningTID,
+					.startingAddress = (U32) createdBlock,
+					.next = NULL,
+					.prev = NULL,
+					.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
+					.magicNum = MAGIC_NUMBER_BLOCK
+		};
+
+	*(Block*) createdBlock = temp; // Store block in heap
+	DEBUG_PRINTF("Address: %p\r\n", createdBlock);
+	// ---------------------
+
+	// Find corresponding free list index using order
+	DEBUG_PRINTF("Splitting parent with free list index: %d\r\n", parentFreeListIdx);
+
+
+	U32 createdIndex = parentFreeListIdx + 1;
+	// Push created buddy block to the free list
+	Free_List_Push(createdBlock, createdIndex);
+
+	parentBlock->size = (parentBlock->size)/2;
+	Free_List_Pop(parentFreeListIdx);
+	Free_List_Push(parentBlock, createdIndex);
+
+//	DEBUG_PRINTF("Pushed buddy address: %d\r\n", buddy_addr);
+
+	// Return pointer to allocated block
+	return parentBlock;
+}
+
+
+__attribute__((always_inline))
+inline U32 Calculate_Order(U32 num) {
+	U32 result = 0;
+	while (num >>= 1) result++;
+	return result;
+}
+
+
+__attribute__((always_inline))
+inline U32 Calculate_Nearest_Order(U32 num) {
+	U32 order;
+	if (num == 0) {
+		order = 0;
+	} else {
+		order = (32 - CLZ(num - 1));
+	}
+	DEBUG_PRINTF("CALCULATED NEAREST ORDER: %d\r\n", order);
+	return order;
+}
+
+__attribute__((always_inline))
+inline U32 Calculate_Free_List_Idx(U32 order) {
+	U32 index = MAX_ORDER + MIN_BLOCK_ORDER - order;
+
+	if(index > MAX_ORDER){
+		index = MAX_ORDER;
+	}
+
+	return index;
 }
