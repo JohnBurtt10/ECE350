@@ -80,8 +80,16 @@ int k_mem_init(void) {
 
 int k_mem_count_extfrag(size_t size) {
 	// Determine Order
-
-	return RTX_ERR;
+	size_t count = 0;
+	for (size_t i = 0; i < HEIGHT_OF_TREE; i++){
+		Block* currBlock = buddyHeap.freeList[i];
+		if (currBlock) {
+			if (currBlock->size < size) {
+				count++;
+			}
+		}
+	}
+	return count;
 }
 
 
