@@ -30,8 +30,11 @@ void Task_Yield_Exit(void);
 void Task_Yield(void);
 void Task_Create(void);
 
+void Print_Free_List();
+
 TCB task;
 
+#ifdef DEBUG_ENABLE
 int main(void)
 {
 	/* MCU Configuration: Don't change this or the whole chip won't work!*/
@@ -74,9 +77,9 @@ int main(void)
 //	DEBUG_PRINTF("Image end: %x\r\n", &_img_end);
 //	DEBUG_PRINTF("EStack: %x\r\n", &_estack);
 //	DEBUG_PRINTF("Min Stack Size: %x\r\n", &_Min_Stack_Size);
-//	DEBUG_PRINTF("Start address: %x\r\n", kernelVariables.startOfHeap);
-//	DEBUG_PRINTF("End address: %x\r\n", kernelVariables.endOfHeap);
-//	DEBUG_PRINTF("Size of Heap: %d bytes\r\n", kernelVariables.endOfHeap - kernelVariables.startOfHeap);
+	DEBUG_PRINTF("Start address: %x\r\n", kernelVariables.startOfHeap);
+	DEBUG_PRINTF("End address: %x\r\n", kernelVariables.endOfHeap);
+	DEBUG_PRINTF("Size of Heap: %d bytes\r\n", kernelVariables.endOfHeap - kernelVariables.startOfHeap);
 //	DEBUG_PRINTF("Size of KernelVariables: %d\r\n", sizeof(Kernel_Variables));
 //	DEBUG_PRINTF("Size of TCB: %d\r\n", sizeof(TCB));
 //	DEBUG_PRINTF("Size of Block: %d\r\n", sizeof(Block));
@@ -107,21 +110,47 @@ int main(void)
     int test_index = Calculate_Free_List_Idx(test);
     DEBUG_PRINTF("Free list index of %d: %d\r\n", block_size, test_index);
 
-    void* test1 =  k_mem_alloc(block_size);
-    void* test2 = k_mem_alloc(block_size);
-    void* test3 = k_mem_alloc(7000);
-    DEBUG_PRINTF("test1 = %p\r\n", test1);
-    DEBUG_PRINTF("test2 = %p\r\n", test2);
-    DEBUG_PRINTF("test2 = %p\r\n", test3);
+    void* malloc_ptr1 = k_mem_alloc(block_size);
+    void* malloc_ptr2 = k_mem_alloc(block_size);
+//    void* malloc_ptr3 = k_mem_alloc(62);
+//    void* malloc_ptr4 = k_mem_alloc(640000);
+//    void* malloc_ptr5 = k_mem_alloc(128);
+//    void* malloc_ptr6 = k_mem_alloc(2);
+
+    DEBUG_PRINTF("malloc_ptr1: %x, size: %d\r\n", malloc_ptr1, ((Block *)ACTUAL_BLOCK(malloc_ptr1))->size);
+    DEBUG_PRINTF("malloc_ptr2: %x, size: %d\r\n", malloc_ptr2, ((Block *)ACTUAL_BLOCK(malloc_ptr2))->size);
+//    DEBUG_PRINTF("malloc_ptr3: %x, size: %d\r\n", malloc_ptr3, ((Block *)ACTUAL_BLOCK(malloc_ptr3))->size);
+//    DEBUG_PRINTF("malloc_ptr5: %x, size: %d\r\n", malloc_ptr5, ((Block *)ACTUAL_BLOCK(malloc_ptr5))->size);
+//    DEBUG_PRINTF("malloc_ptr5: %x, size: %d\r\n", malloc_ptr6, ((Block *)ACTUAL_BLOCK(malloc_ptr6))->size);
+    DEBUG_PRINTF("Finished Mem_Alloc\r\n\n");
+
+    // buddyHeap.freeList[test_index];
+
+    k_mem_dealloc(malloc_ptr1);
+    DEBUG_PRINTF("\r\n");
 
     Print_Free_List();
-//    k_mem_alloc(block_size);
-//    k_mem_alloc(62);
+    DEBUG_PRINTF("\r\n");
 
-    DEBUG_PRINTF("Finished Mem_Alloc\r\n");
-//    buddyHeap.freeList[test_index];
+    k_mem_dealloc(malloc_ptr2);
+    DEBUG_PRINTF("\r\n");
 
-    // Block* test_block = Create_Block(32, , FREE, kernelVariables.currentRunningTID);
+    Print_Free_List();
+    DEBUG_PRINTF("\r\n");
+
+//    // Test the case when the pointer is NULL
+//    k_mem_dealloc(ptr);
+
+//    // Test the case where the pointer is a random address (does not point to a block)
+//    ptr = 0x20013000;
+//    k_mem_dealloc(ptr);
+
+//    ptr = malloc_ptr2;
+//    Block* temp = (Block *)(ptr);
+//    temp->size = 0x40;
+//    k_mem_dealloc(ptr);
+
+    //Block* test_block = Create_Block(32, , FREE, kernelVariables.currentRunningTID);
 
     // Split_Block();
 	while (1)
@@ -131,15 +160,21 @@ int main(void)
 	}
 	/* USER CODE END 3 */
 }
+#endif
 
 void Print_Free_List() {
-	for (int i = 0; i < MAX_ORDER; i++) {
-		Block* currentBlock = buddyHeap.freeList[i];
-		while (currentBlock != NULL) {
-			DEBUG_PRINTF("Block Size: %d, Order: %d\r\n", currentBlock->size, MAX_ORDER - i);
-			currentBlock = currentBlock->next;
-		}
-	}
+    for (int i = 0; i < HEIGHT_OF_TREE; i++) {
+        Block* currentBlock = buddyHeap.freeList[i];
+
+        if (currentBlock == NULL) {
+        	DEBUG_PRINTF("Block is null for i = %d.\r\n", i);
+        } else {
+        	while (currentBlock != NULL) {
+        		DEBUG_PRINTF("Block Size: %d, Order: %d, Metadata: %x\r\n", currentBlock->size, MAX_ORDER - i, currentBlock);
+        		currentBlock = currentBlock->next;
+        	}
+        }
+    }
 }
 
 void Task_Create(void) {

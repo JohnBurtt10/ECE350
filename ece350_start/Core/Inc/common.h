@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-#define DEBUG_ENABLE // Comment me out to disable debugging
+// #define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
@@ -96,6 +96,7 @@ typedef struct kernel_variables {
 #define NUMBER_OF_NODES ((1 << HEIGHT_OF_TREE) - 1)
 #define USED 1
 #define FREE 0
+
 #define MAGIC_NUMBER_BLOCK 0x12345678
 
 typedef struct Block {
@@ -114,6 +115,8 @@ typedef struct BuddyHeap {
 	Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
 	U8 bitArray[NUMBER_OF_NODES];
 } BuddyHeap;
+
+#define ACTUAL_BLOCK(ADDR) ((U32) ADDR - sizeof(Block))
 
 extern Kernel_Variables kernelVariables;
 extern BuddyHeap buddyHeap;
@@ -134,5 +137,11 @@ unsigned int Get_Total_Memory_Used();
  * @brief: Finds the next TCB to run and returns the TID
 */
 int Scheduler(void);
+
+void Coalesce_Block(Block* parentBlock, Block* buddyBlock);
+
+void Empty_Block(Block* block);
+
+Block* Get_Buddy(Block* block);
 
 #endif /* INC_COMMON_H_ */

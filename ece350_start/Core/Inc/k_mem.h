@@ -59,4 +59,6 @@ void Free_List_Push(Block* newBlock, U32 freeListIdx);
 
 Block* Free_List_Pop(U32 freeListIdx);
 
+int k_mem_dealloc(void* ptr);
+
 #endif /* INC_K_MEM_H_ */
