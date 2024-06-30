@@ -37,7 +37,7 @@ void osInitBuddyHeap();
 
 int k_mem_init(void);
 
-int k_mem_count_(size_t size);
+int k_mem_count_extfrag(size_t size);
 
 void* k_mem_alloc(size_t size);
 

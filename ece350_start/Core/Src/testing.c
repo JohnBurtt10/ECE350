@@ -24,7 +24,6 @@ void Init_Task_2(TCB* task);
 void Init_Task_3(TCB* task);
 void Test_osCreateTask(); // Will fill all tcb's with the same tcb.
 void Print_All_TCBs();
-void Print_Free_List();
 
 void Task_Yield_Exit(void);
 void Task_Yield(void);
@@ -90,22 +89,10 @@ int main(void)
 //	DEBUG_PRINTF("First Block TID of Owner: %d\r\n", firstBlock->TIDofOwner);
 //	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
 //	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
-    int block_size = 32;
-//
+    int block_size = 16000;
+
 	int test = Calculate_Order(block_size);
 	DEBUG_PRINTF("Order of 32: %d\r\n", test);
-
-	Calculate_Nearest_Order(1);
-	Calculate_Nearest_Order(0);
-	Calculate_Nearest_Order(32767);
-	Calculate_Nearest_Order(32768);
-	Calculate_Nearest_Order(32769);
-	Calculate_Nearest_Order(33);
-	Calculate_Nearest_Order(32);
-	Calculate_Nearest_Order(31);
-	Calculate_Nearest_Order(63);
-	Calculate_Nearest_Order(64);
-	Calculate_Nearest_Order(65);
 
     int test_index = Calculate_Free_List_Idx(test);
     DEBUG_PRINTF("Free list index of %d: %d\r\n", block_size, test_index);

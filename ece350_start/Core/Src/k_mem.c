@@ -10,6 +10,7 @@
 #include "k_mem.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <assert.h>
 
 // ------- Globals --------
 Kernel_Variables kernelVariables = {.currentRunningTID = -1,
@@ -77,7 +78,7 @@ int k_mem_init(void) {
 	return RTX_OK;
 }
 
-int k_mem_count_(size_t size) {
+int k_mem_count_extfrag(size_t size) {
 	// Determine Order
 
 	return RTX_ERR;
@@ -87,17 +88,17 @@ int k_mem_count_(size_t size) {
 void osInitBuddyHeap(void) {
 	buddyHeap.currentBlockListSize = 0;
 
-	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		buddyHeap.blockList[i] = NULL;
-	}
+//	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+//		buddyHeap.blockList[i] = NULL;
+//	}
 
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
 		buddyHeap.freeList[i] = NULL;
 	}
 
-	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-		buddyHeap.bitArray[i] = 0;
-	}
+//	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+//		buddyHeap.bitArray[i] = 0;
+//	}
 
 	Block* initial_block = Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
 	Free_List_Push(initial_block, 0);
@@ -115,10 +116,9 @@ void* k_mem_alloc(size_t size)
 	uint32_t required_size = size + sizeof(Block);
 	DEBUG_PRINTF("Required size: %d, sizeof(Block)= %d\r\n", required_size, sizeof(Block));
 
-//	U32 required_order = Calculate_Order(required_size);
 	// Round to nearest order. Eg, size to allocate = 42 bytes, order should be 6. 2^6 = 64 bytes;
-	U32 required_order = Calculate_Nearest_Order(required_size);
-//	U32 required_idx = Calculate_Free_List_Idx(required_order);
+	U32 required_order = 32 - CLZ(required_size - 1);
+
 	U32 required_idx = CALCULATE_FREE_LIST_IDX(required_order);
 
 	Block* freeBlock = buddyHeap.freeList[required_idx];
@@ -130,7 +130,7 @@ void* k_mem_alloc(size_t size)
 	}
 
 	// Iterate through the free list to find the smallest available block already allocated/ not empty
-	U32 currIndex = required_idx;
+	int currIndex = required_idx;
 	while(currIndex >= 0){
 		// Save the index of the first block that is free
 		Block* currBlock = buddyHeap.freeList[currIndex];
@@ -140,11 +140,13 @@ void* k_mem_alloc(size_t size)
 				DEBUG_PRINTF("Current 'i' Value: %d\r\n", i);
 
 				currBlock = Split_Block(currBlock, i);
+
 				DEBUG_PRINTF("Splitting %d\r\n", i);
 				DEBUG_PRINTF("current freelist index: %d\r\n", i);
 
 //				DEBUG_PRINTF("Current block: %p\r\n", currBlock->startingAddress);
-//				currBlock = buddyHeap.freeList[i++];
+				size_t temp = i + 1;
+				currBlock = buddyHeap.freeList[temp];
 //				DEBUG_PRINTF("Next block: %p\r\n", currBlock->startingAddress);
 			}
 
@@ -215,6 +217,7 @@ inline Block* Free_List_Pop(U32 freeListIdx){
 	return popped_block;
 }
 
+__attribute__((always_inline))
 inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
 //	U32 parentOrder = CALCULATE_ORDER_FROM_FREELIST_IDX(parentFreeListIdx);
 	U32 newSize = parentBlock->size/2;
@@ -244,7 +247,7 @@ inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
 	// Push created buddy block to the free list
 	Free_List_Push(createdBlock, createdIndex);
 
-	parentBlock->size = (parentBlock->size)/2;
+	parentBlock->size = newSize;
 	Free_List_Pop(parentFreeListIdx);
 	Free_List_Push(parentBlock, createdIndex);
 
@@ -386,4 +389,6 @@ int k_mem_dealloc(void* ptr) {
 			break;
 		}
 	}
+
+	return RTX_OK;
 }
