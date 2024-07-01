@@ -111,9 +111,9 @@ typedef struct Block {
 
 typedef struct BuddyHeap {
 	U32 currentBlockListSize;
-	Block* blockList[NUMBER_OF_NODES];
+//	Block* blockList[NUMBER_OF_NODES];
 	Block* freeList[HEIGHT_OF_TREE];  // Eg, 2^5 = 32, 2^6 = 64, ....
-	U8 bitArray[NUMBER_OF_NODES];
+//	U8 bitArray[NUMBER_OF_NODES];
 } BuddyHeap;
 
 #define ACTUAL_BLOCK(ADDR) ((U32) ADDR - sizeof(Block))
@@ -137,14 +137,6 @@ unsigned int Get_Total_Memory_Used();
  * @brief: Finds the next TCB to run and returns the TID
 */
 int Scheduler(void);
-
-U32 Calculate_Order(U32 num);
-
-int Calculate_Free_List_Idx(U32 order);
-
-void Free_List_Push(Block* newBlock, U32 freeListIdx);
-
-Block* Free_List_Pop(U32 freeListIdx);
 
 void Coalesce_Block(Block* parentBlock, Block* buddyBlock);
 

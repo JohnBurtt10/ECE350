@@ -41,50 +41,6 @@ int Scheduler(void) {
 	return TIDTaskToRun;
 }
 
-U32 Calculate_Order(U32 num) {
-	U32 result = 0;
-	while (num >>= 1) result++;
-	return result;
-}
-
-int Calculate_Free_List_Idx(U32 order) {
-	int index = MAX_ORDER + MIN_BLOCK_ORDER - order;
-
-	if(index > MAX_ORDER){
-		index = MAX_ORDER;
-	}
-
-	return index;
-}
-
-void Free_List_Push(Block* newBlock, U32 freeListIdx){
-	// Push created buddy block to the free list
-	newBlock->prev = NULL;
-
-	newBlock->next = buddyHeap.freeList[freeListIdx];
-
-	// list contains more than 0 elements
-	if(buddyHeap.freeList[freeListIdx] != NULL){
-		buddyHeap.freeList[freeListIdx]->prev = newBlock;
-	}
-
-	buddyHeap.freeList[freeListIdx] = newBlock;
-}
-
-Block* Free_List_Pop(U32 freeListIdx){
-	Block *popped_block;
-
-	if(buddyHeap.freeList[freeListIdx] == NULL){
-		return NULL;
-	}
-
-	popped_block = buddyHeap.freeList[freeListIdx];
-	buddyHeap.freeList[freeListIdx] = buddyHeap.freeList[freeListIdx]->next;
-	buddyHeap.freeList[freeListIdx]->prev = NULL;
-
-	return popped_block;
-}
-
 void Coalesce_Block(Block* parentBlock, Block* buddyBlock) {
 	// Remove the buddyBlock from the free list
 	U32 buddyOrder = Calculate_Order(buddyBlock->size);

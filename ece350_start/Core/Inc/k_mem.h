@@ -14,6 +14,9 @@
 #include <stddef.h>
 #include "svc_handler_main.h"
 
+#define CALCULATE_FREE_LIST_IDX(ORDER) (MAX_ORDER + MIN_BLOCK_ORDER - ORDER)
+#define CALCULATE_ORDER_FROM_FREELIST_IDX(X) (MIN_BLOCK_ORDER + MAX_ORDER - X);
+
 /**
  * @brief  Initializes all global kernel-level data structures and other variables as required by the kernel
  * @retval None
@@ -34,11 +37,15 @@ void osInitBuddyHeap();
 
 int k_mem_init(void);
 
-int k_mem_count_(size_t size);
+int k_mem_count_extfrag(size_t size);
 
 void* k_mem_alloc(size_t size);
 
-int k_mem_dealloc(void* ptr);
+U32 Calculate_Order(U32 num);
+
+U32 Calculate_Nearest_Order(U32 num);
+
+U32 Calculate_Free_List_Idx(U32 order);
 
 /**
  * @brief: Creates a block given heap address, size of requested malloc, current type and owner.
@@ -46,9 +53,12 @@ int k_mem_dealloc(void* ptr);
  */
 Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner);
 
-Block* Split_Block(Block* parentBlock);
+Block* Split_Block(Block* parentBlock, U32 currFreeListIdx);
 
-__attribute__((always_inline))
-inline U32 Calculate_Nearest_Order(U32 num);
+void Free_List_Push(Block* newBlock, U32 freeListIdx);
+
+Block* Free_List_Pop(U32 freeListIdx);
+
+int k_mem_dealloc(void* ptr);
 
 #endif /* INC_K_MEM_H_ */
