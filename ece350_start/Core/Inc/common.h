@@ -102,7 +102,7 @@ typedef struct kernel_variables {
 typedef struct Block {
 	uint32_t type; // FREE/USED
 	uint32_t size; // Block size including sizeof(Block)
-	uint32_t TIDofOwner;
+	int TIDofOwner;
 	uint32_t startingAddress;
 	struct Block* next; // Points to the start of the next block
 	struct Block* prev;
