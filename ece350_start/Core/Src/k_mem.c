@@ -173,6 +173,99 @@ void* k_mem_alloc(size_t size)
 	return NULL;
 }
 
+int k_mem_dealloc(void* ptr) {
+	/**
+	 *  VALIDATE BLOCK AND SET TO FREE
+	 *
+	 *  Checks:
+	 *  	1) Check if the pointer is NULL
+	 *  	2) Check if the magic number is set correctly
+	 *  	3) Check if current TID matches the TID of block owner
+	 *  	4) Check to ensure the block hasn't been freed before
+	 */
+
+	// If the pointer is NULL, log and return an error.
+	if (ptr == NULL) {
+		DEBUG_PRINTF("  ERROR: The pointer to deallocate is NULL.\r\n");
+		return RTX_ERR;
+	}
+
+	Block* block = (Block *)((U32)ptr - sizeof(Block));
+
+	// If the magic number does not match, or if the TID does not match the owner TID, or the block is already FREE, log and return an error.
+	if (block->magicNum != MAGIC_NUMBER_BLOCK || kernelVariables.currentRunningTID != block->TIDofOwner || block->type == FREE) {
+		DEBUG_PRINTF("  ERROR: The block is not a valid block to free.");
+		return RTX_ERR;
+	}
+
+	// Once the block passes all check, set it to FREE!
+	block->type = FREE;
+
+	U32 blockOrder = 32 - CLZ(block->size - 1);
+	U32 blockIdx = CALCULATE_FREE_LIST_IDX(blockOrder);
+	DEBUG_PRINTF("Block Idx: %d\r\n", blockIdx);
+
+	Free_List_Push(block, blockIdx);
+
+	/**
+	 *  COALESCE BLOCKS
+	 *
+	 *  Iterate through loop until buddy address returned is NULL or buddy can't be coalesced.
+	 *
+	 *  Before we coalesce the blocks we check the following:
+	 *    1) Size of the buddy
+	 *    	If the size of the buddy doesn't match the size of the block, it indicates the buddy has split.
+	 *    	The buddy can't be coalesced in this case as the buddy is partially full.
+	 *    2) The type of the buddy
+	 *    	If the type of the buddy is USED, the buddy can't be coalesced.
+	 */
+
+	Block* buddy = Get_Buddy(block);
+
+	U32 buddyOrder = 32 - CLZ(buddy->size - 1);
+	U32 buddyIdx = CALCULATE_FREE_LIST_IDX(buddyOrder);
+	DEBUG_PRINTF("Buddy Idx: %d\r\n", buddyIdx);
+
+	while (blockIdx > 0) {
+		DEBUG_PRINTF("  INFO: The block has a buddy :) (Address = %x).\r\n", buddy->startingAddress);
+
+		/*
+		 * If the size of the buddy matches the size of the current block, the buddy hasn't been split.
+		 * This means the buddy is either fully free or fully used. If the buddy is full free the block
+		 * can be coalesced.
+		 */
+		if ((block->size == buddy->size) && buddy->type == FREE) {
+			DEBUG_PRINTF("  INFO: The buddy can be coalesced!\r\n");
+
+			// If the buddy address is greater than the block address, the current block is the parent.
+			// Else, the buddy is the parent and the block is the created buddy.
+			if (buddy->startingAddress > block->startingAddress) {
+				DEBUG_PRINTF("  INFO: Parent = Block.\r\n");
+				Coalesce_Block(block, buddy, blockIdx, buddyIdx);
+
+				// Get the new buddy of the coalesced block.
+				buddy = Get_Buddy(block);
+			} else {
+				DEBUG_PRINTF("  INFO: Parent = Buddy.\r\n");
+				Coalesce_Block(buddy, block, buddyIdx, blockIdx);
+
+				// Update the parent block to be the buddy and get the new buddy of the coalesced block.
+				block = buddy;
+				buddy = Get_Buddy(buddy);
+			}
+
+			blockIdx = blockIdx - 1;
+			buddyIdx = buddyIdx - 1;
+			DEBUG_PRINTF("Block Index: %d\r\n", blockIdx);
+		} else {
+			DEBUG_PRINTF("  INFO: The buddy has been split OR the buddy is FREE. Block Size: %x. Buddy Size: %x. Buddy Type: %d.\r\n", block->size, buddy->size, buddy->type);
+			break;
+		}
+	}
+
+	return RTX_OK;
+}
+
 inline Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) {
 
 	// Ensure size is not greater than our max order, and round to nearest power of 2 and multiple of 32.
@@ -267,6 +360,50 @@ inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
 	return parentBlock;
 }
 
+__attribute__((always_inline))
+inline void Coalesce_Block(Block* parentBlock, Block* buddyBlock, U32 parentBlockIdx, U32 buddyBlockIdx) {
+	// Remove the buddyBlock from the free list
+	Block* prevBlockOfBuddy = buddyBlock->prev;
+	Block* nextBlockOfBuddy = buddyBlock->next;
+
+	// Check if the buddy block is not the head
+	if (prevBlockOfBuddy != NULL) {
+		prevBlockOfBuddy->next = nextBlockOfBuddy;
+	} else {
+		Free_List_Pop(buddyBlockIdx);
+	}
+
+	// Check if the buddy block is not the tail of the list
+	if (nextBlockOfBuddy != NULL) {
+		nextBlockOfBuddy->prev = prevBlockOfBuddy;
+	}
+
+	buddyBlock->type = FREE;
+
+	// Update the size of the parentBlock
+	parentBlock->size = parentBlock->size * 2;
+	U32 newParentIdx = parentBlockIdx - 1;
+
+	// Update the parentBlock in the free list
+	//   1) Remove the parentBlock in the free list
+	//   2) Push the parentBlock to the new index in the free list
+	Block* tempBlock = parentBlock;
+	Block* prevBlockOfParent = parentBlock->prev;
+	Block* nextBlockOfParent = parentBlock->next;
+
+	// Check if the parent block is the head
+	if (prevBlockOfParent != NULL) {
+		prevBlockOfParent->next = nextBlockOfParent;
+	} else {
+		Free_List_Pop(parentBlockIdx);
+	}
+
+	if (nextBlockOfParent != NULL) {
+		nextBlockOfParent->prev = prevBlockOfParent;
+	}
+
+	Free_List_Push(tempBlock, newParentIdx);
+}
 
 __attribute__((always_inline))
 inline U32 Calculate_Order(U32 num) {
@@ -299,106 +436,32 @@ inline U32 Calculate_Free_List_Idx(U32 order) {
 	return index;
 }
 
-int k_mem_dealloc(void* ptr) {
-	/**
-	 *  VALIDATE BLOCK AND SET TO FREE
-	 *
-	 *  Checks:
-	 *  	1) Check if the pointer is NULL
-	 *  	2) Check if the magic number is set correctly
-	 *  	3) Check if current TID matches the TID of block owner
-	 *  	4) Check to ensure the block hasn't been freed before
-	 */
+__attribute__((always_inline))
+inline Block* Get_Buddy(Block* block) {
+	U32 order = 32 - CLZ(block->size - 1);
+	DEBUG_PRINTF("  INFO: Order to get the block address: %d\r\n", order);
+	U32 buddyAddress = (((U32)(block) - kernelVariables.startOfHeap) ^ (1 << order)) + kernelVariables.startOfHeap;
 
-	// If the pointer is NULL, log and return an error.
-	if (ptr == NULL) {
-		DEBUG_PRINTF("  ERROR: The pointer to deallocate is NULL.\r\n");
-		return RTX_ERR;
+#ifdef DEBUG_ENABLE
+	if (buddyAddress > kernelVariables.endOfHeap || buddyAddress < kernelVariables.startOfHeap) {
+		DEBUG_PRINTF("  ERROR: The buddy address is out of range of the heap: %x\r\n", buddyAddress);
+		DEBUG_PRINTF("  ERROR: Start Address = %x, End Address = %x, Size = %d", kernelVariables.startOfHeap, kernelVariables.endOfHeap, kernelVariables.endOfHeap - kernelVariables.startOfHeap);
+		return NULL;
 	}
+#endif
 
-	Block* block = (Block *)((U32)ptr - sizeof(Block));
+	Block* buddy = (Block *)(buddyAddress);
+	DEBUG_PRINTF("  INFO: Block to dealloc address: %x, Buddy address: %x, Block to dealloc size: %d. XOR size value: %d.\r\n", block, buddyAddress, block->size, 1 << order);
 
-	// If the magic number is not correct, log and return an error.
-	if (block->magicNum != MAGIC_NUMBER_BLOCK) {
-		DEBUG_PRINTF("  ERROR: The pointer does not point to a valid block, magic number: %x.\r\n", block->magicNum);
-		return RTX_ERR;
+#ifdef DEBUG_ENABLE
+	if (buddy->magicNum == MAGIC_NUMBER_BLOCK) {
+		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
+		return buddy;
+	} else {
+		DEBUG_PRINTF("  INFO: Invalid buddy address >:(\r\n");
+		return NULL;
 	}
+#endif
 
-	// If the current TID does not match TID of owner, log and return error.
-	if (kernelVariables.currentRunningTID != block->TIDofOwner) {
-		DEBUG_PRINTF("  ERROR: Malicious task, current TID: %d | owner TID: %d.\r\n", kernelVariables.currentRunningTID, block->TIDofOwner);
-		return RTX_ERR;
-	}
-
-	// If the block is already deallocated, it can't be freed again so log and return error.
-	if (block->type == FREE) {
-		DEBUG_PRINTF("  ERROR: The block is already freed, can't be freed again.\r\n");
-		return RTX_ERR;
-	}
-
-
-	// TODO: Check if they will demalloc the root
-
-	// Once the block passes all check, set it to FREE!
-	block->type = FREE;
-	U32 blockOrder = Calculate_Order(block->size);
-	U32 blockIdx = Calculate_Free_List_Idx(blockOrder);
-	DEBUG_PRINTF("Block Idx: %d\r\n", blockIdx);
-	Free_List_Push(block, blockIdx);
-
-	/**
-	 *  COALESCE BLOCKS
-	 *
-	 *  Iterate through loop until buddy address returned is NULL or buddy can't be coalesced.
-	 *
-	 *  Before we coalesce the blocks we check the following:
-	 *    1) Size of the buddy
-	 *    	If the size of the buddy doesn't match the size of the block, it indicates the buddy has split.
-	 *    	The buddy can't be coalesced in this case as the buddy is partially full.
-	 *    2) The type of the buddy
-	 *    	If the type of the buddy is USED, the buddy can't be coalesced.
-	 */
-
-	Block* buddy = Get_Buddy(block);
-
-	while (blockIdx > 0) {
-		DEBUG_PRINTF("  INFO: The block has a buddy :) (Address = %x).\r\n", buddy->startingAddress);
-
-		/*
-		 * If the size of the buddy matches the size of the current block, the buddy hasn't been split.
-		 * This means the buddy is either fully free or fully used.
-		 */
-		if (block->size == buddy->size) {
-			DEBUG_PRINTF("  INFO: The buddy hasn't been split!\r\n");
-
-			// If the buddy is FREE, the buddy is fully FREE so it can be coalesced.
-			if (buddy->type == FREE) {
-				DEBUG_PRINTF("  INFO: The buddy is fully free!\r\n");
-
-				// If the buddy address is greater than the block address, the current block is the parent,
-				// Else, the buddy is the parent and the block is the created buddy.
-				if (buddy->startingAddress > block->startingAddress) {
-					DEBUG_PRINTF("  INFO: Parent = Block.\r\n");
-					Coalesce_Block(block, buddy);
-					buddy = Get_Buddy(block);
-				} else {
-					DEBUG_PRINTF("  INFO: Parent = Buddy.\r\n");
-					Coalesce_Block(buddy, block);
-					block = buddy;
-					buddy = Get_Buddy(buddy);
-				}
-
-				blockIdx = blockIdx - 1;
-				DEBUG_PRINTF("Block Idx: %d\r\n", blockIdx);
-			} else {
-				DEBUG_PRINTF("  INFO: The buddy is fully used.\r\n");
-				break;
-			}
-		} else {
-			DEBUG_PRINTF("  INFO: The buddy has been split. Block Size: %x. Buddy Size: %x.\r\n", block->size, buddy->size);
-			break;
-		}
-	}
-
-	return RTX_OK;
+	return buddy;
 }
