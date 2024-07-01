@@ -41,6 +41,8 @@ int k_mem_count_extfrag(size_t size);
 
 void* k_mem_alloc(size_t size);
 
+int k_mem_dealloc(void* ptr);
+
 U32 Calculate_Order(U32 num);
 
 U32 Calculate_Nearest_Order(U32 num);
@@ -55,10 +57,12 @@ Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner);
 
 Block* Split_Block(Block* parentBlock, U32 currFreeListIdx);
 
+void Coalesce_Block(Block* parentBlock, Block* buddyBlock, U32 parentBlockIdx, U32 buddyBlockIdx);
+
 void Free_List_Push(Block* newBlock, U32 freeListIdx);
 
 Block* Free_List_Pop(U32 freeListIdx);
 
-int k_mem_dealloc(void* ptr);
+Block* Get_Buddy(Block* block);
 
 #endif /* INC_K_MEM_H_ */
