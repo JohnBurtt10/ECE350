@@ -133,6 +133,7 @@ void* k_mem_alloc(size_t size)
 
 	if (freeBlock != NULL) {
 		freeBlock->type = USED;
+		freeBlock->TIDofOwner = kernelVariables.currentRunningTID;
 		Free_List_Pop(required_idx);
 		return (void*) ((U32)freeBlock + sizeof(Block));
 	}
@@ -160,6 +161,7 @@ void* k_mem_alloc(size_t size)
 
 			currBlock = Free_List_Pop(required_idx);
 			currBlock->type = USED;
+			currBlock->TIDofOwner = kernelVariables.currentRunningTID;
 			return (void*) ((U32) currBlock + sizeof(Block));
 		}
 
