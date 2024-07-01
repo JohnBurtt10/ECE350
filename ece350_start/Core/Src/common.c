@@ -103,34 +103,28 @@ void Empty_Block(Block* block) {
 inline Block* Get_Buddy(Block* block) {
 	U32 order = Calculate_Order(block->size);
 	DEBUG_PRINTF("  INFO: Order to get the block address: %d\r\n", order);
-	U32 buddyAddress = 0x0;
+	U32 buddyAddress = (((U32)(block) - kernelVariables.startOfHeap) ^ (1 << order)) + kernelVariables.startOfHeap;
 
-	if ((U32)block == kernelVariables.startOfHeap) {
-		buddyAddress = kernelVariables.startOfHeap + block->size;
+#ifdef DEBUG_ENABLE
+	if (buddyAddress > kernelVariables.endOfHeap || buddyAddress < kernelVariables.startOfHeap) {
+		DEBUG_PRINTF("  ERROR: The buddy address is out of range of the heap: %x\r\n", buddyAddress);
+		DEBUG_PRINTF("  ERROR: Start Address = %x, End Address = %x, Size = %d", kernelVariables.startOfHeap, kernelVariables.endOfHeap, kernelVariables.endOfHeap - kernelVariables.startOfHeap);
+		return NULL;
 	}
-	else if ((U32)block == kernelVariables.endOfHeap - block->size) {
-		buddyAddress = kernelVariables.endOfHeap - block->size;
-	}
-	else {
-		buddyAddress = (U32)(block) ^ (1 << order);
-	}
-
-//	if (buddyAddress > kernelVariables.endOfHeap || buddyAddress < kernelVariables.startOfHeap) {
-//		DEBUG_PRINTF("  ERROR: The buddy address is out of range of the heap: %x\r\n", buddyAddress);
-//		DEBUG_PRINTF("  ERROR: Start Address = %x, End Address = %x, Size = %d", kernelVariables.startOfHeap, kernelVariables.endOfHeap, kernelVariables.endOfHeap - kernelVariables.startOfHeap);
-//		return NULL;
-//	}
+#endif
 
 	Block* buddy = (Block *)(buddyAddress);
 	DEBUG_PRINTF("  INFO: Block to dealloc address: %x, Buddy address: %x, Block to dealloc size: %d. XOR size value: %d.\r\n", block, buddyAddress, block->size, 1 << order);
 
-//	if (buddy->magicNum == MAGIC_NUMBER_BLOCK) {
-//		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
-//		return buddy;
-//	} else {
-//		DEBUG_PRINTF("  INFO: Invalid buddy address >:(\r\n");
-//		return NULL;
-//	}
+#ifdef DEBUG_ENABLE
+	if (buddy->magicNum == MAGIC_NUMBER_BLOCK) {
+		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
+		return buddy;
+	} else {
+		DEBUG_PRINTF("  INFO: Invalid buddy address >:(\r\n");
+		return NULL;
+	}
+#endif
 
 	return buddy;
 }
