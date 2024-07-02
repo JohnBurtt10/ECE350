@@ -227,7 +227,7 @@ int k_mem_dealloc(void* ptr) {
 	DEBUG_PRINTF("Buddy Idx: %d\r\n", buddyIdx);
 
 	while (blockIdx > 0) {
-		DEBUG_PRINTF("  INFO: The block has a buddy :) (Address = %x).\r\n", buddy->startingAddress);
+		DEBUG_PRINTF("  INFO: The block has a buddy :) (Address = %x).\r\n", buddy);
 
 		/*
 		 * If the size of the buddy matches the size of the current block, the buddy hasn't been split.
@@ -239,7 +239,7 @@ int k_mem_dealloc(void* ptr) {
 
 			// If the buddy address is greater than the block address, the current block is the parent.
 			// Else, the buddy is the parent and the block is the created buddy.
-			if (buddy->startingAddress > block->startingAddress) {
+			if (buddy > block) {
 				DEBUG_PRINTF("  INFO: Parent = Block.\r\n");
 				Coalesce_Block(block, buddy, blockIdx, buddyIdx);
 
