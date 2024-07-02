@@ -94,7 +94,6 @@ void Empty_Block(Block* block) {
 	block->type = FREE;
 	block->size = 0;
 	block->TIDofOwner = 0;
-	block->startingAddress = 0;
 	block->next = NULL;
 	block->prev = NULL;
 	block->magicNum = 0;

@@ -153,10 +153,10 @@ void* k_mem_alloc(size_t size)
 				DEBUG_PRINTF("Splitting %d\r\n", i);
 				DEBUG_PRINTF("current freelist index: %d\r\n", i);
 
-//				DEBUG_PRINTF("Current block: %p\r\n", currBlock->startingAddress);
+//				DEBUG_PRINTF("Current block: %p\r\n", currBlock);
 				size_t temp = i + 1;
 				currBlock = buddyHeap.freeList[temp];
-//				DEBUG_PRINTF("Next block: %p\r\n", currBlock->startingAddress);
+//				DEBUG_PRINTF("Next block: %p\r\n", currBlock);
 			}
 
 			currBlock = Free_List_Pop(required_idx);
@@ -188,7 +188,6 @@ inline Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) 
 	Block temp = {
 				.type = type,
 				.TIDofOwner = tidOwner,
-				.startingAddress = (U32) heapAddress,
 				.next = NULL,
 				.prev = NULL,
 				.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
@@ -231,14 +230,13 @@ __attribute__((always_inline))
 inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
 //	U32 parentOrder = CALCULATE_ORDER_FROM_FREELIST_IDX(parentFreeListIdx);
 	U32 newSize = parentBlock->size/2;
-	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock->startingAddress);
+	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock);
 
 	// ---- Create block ----
-	Block* createdBlock = (void*) (parentBlock->startingAddress + newSize);
+	Block* createdBlock = (void*) ((U32)parentBlock + newSize);
 	Block temp = {
 					.type = FREE,
 					.TIDofOwner = kernelVariables.currentRunningTID,
-					.startingAddress = (U32) createdBlock,
 					.next = NULL,
 					.prev = NULL,
 					.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
@@ -362,7 +360,7 @@ int k_mem_dealloc(void* ptr) {
 	Block* buddy = Get_Buddy(block);
 
 	while (blockIdx > 0) {
-		DEBUG_PRINTF("  INFO: The block has a buddy :) (Address = %x).\r\n", buddy->startingAddress);
+		DEBUG_PRINTF("  INFO: The block has a buddy :) (Address = %x).\r\n", buddy);
 
 		/*
 		 * If the size of the buddy matches the size of the current block, the buddy hasn't been split.
@@ -377,7 +375,7 @@ int k_mem_dealloc(void* ptr) {
 
 				// If the buddy address is greater than the block address, the current block is the parent,
 				// Else, the buddy is the parent and the block is the created buddy.
-				if (buddy->startingAddress > block->startingAddress) {
+				if (buddy > block) {
 					DEBUG_PRINTF("  INFO: Parent = Block.\r\n");
 					Coalesce_Block(block, buddy);
 					buddy = Get_Buddy(block);

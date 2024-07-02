@@ -100,10 +100,9 @@ typedef struct kernel_variables {
 #define MAGIC_NUMBER_BLOCK 0x12345678
 
 typedef struct Block {
-	uint32_t type; // FREE/USED
+	U8 type; // FREE/USED
 	uint32_t size; // Block size including sizeof(Block)
 	int TIDofOwner;
-	uint32_t startingAddress;
 	struct Block* next; // Points to the start of the next block
 	struct Block* prev;
 	U32 magicNum;
