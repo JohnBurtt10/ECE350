@@ -137,10 +137,4 @@ unsigned int Get_Total_Memory_Used();
 */
 int Scheduler(void);
 
-void Coalesce_Block(Block* parentBlock, Block* buddyBlock);
-
-void Empty_Block(Block* block);
-
-Block* Get_Buddy(Block* block);
-
 #endif /* INC_COMMON_H_ */
