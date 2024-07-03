@@ -161,7 +161,7 @@ void* k_mem_alloc(size_t size)
 
 			currBlock = Free_List_Pop(required_idx);
 			currBlock->type = USED;
-			currBlock->TIDofOwner = kernelVariables.currentRunningTID;
+			currBlock->TIDofOwner = (int8_t)kernelVariables.currentRunningTID;
 			return (void*) ((U32) currBlock + sizeof(Block));
 		}
 
@@ -193,7 +193,7 @@ int k_mem_dealloc(void* ptr) {
 	Block* block = (Block *)((U32)ptr - sizeof(Block));
 
 	// If the magic number does not match, or if the TID does not match the owner TID, or the block is already FREE, log and return an error.
-	if (block->magicNum != MAGIC_NUMBER_BLOCK || kernelVariables.currentRunningTID != block->TIDofOwner || block->type == FREE) {
+	if (kernelVariables.currentRunningTID != block->TIDofOwner || block->type == FREE) {
 		DEBUG_PRINTF("  ERROR: The block is not a valid block to free.");
 		return RTX_ERR;
 	}
@@ -284,7 +284,6 @@ inline Block* Create_Block(U32 size, void* heapAddress, U32 type, int tidOwner) 
 				.next = NULL,
 				.prev = NULL,
 				.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
-				.magicNum = MAGIC_NUMBER_BLOCK
 	};
 
 	DEBUG_PRINTF("Address: %p\r\n", heapAddress);
@@ -333,7 +332,6 @@ inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
 					.next = NULL,
 					.prev = NULL,
 					.size = newSize, //https://piazza.com/class/lvlcv9pc4496o8/post/177
-					.magicNum = MAGIC_NUMBER_BLOCK
 		};
 
 	*(Block*) createdBlock = temp; // Store block in heap

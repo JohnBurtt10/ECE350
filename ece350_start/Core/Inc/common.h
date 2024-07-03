@@ -97,15 +97,12 @@ typedef struct kernel_variables {
 #define USED 1
 #define FREE 0
 
-#define MAGIC_NUMBER_BLOCK 0x12345678
-
 typedef struct Block {
 	U8 type; // FREE/USED
-	uint32_t size; // Block size including sizeof(Block)
-	int TIDofOwner;
+	uint16_t size; // Block size including sizeof(Block)
+	int8_t TIDofOwner;
 	struct Block* next; // Points to the start of the next block
 	struct Block* prev;
-	U32 magicNum;
 } Block;
 
 typedef struct BuddyHeap {
