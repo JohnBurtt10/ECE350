@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-// #define DEBUG_ENABLE // Comment me out to disable debugging
+ #define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
@@ -60,7 +60,8 @@ typedef unsigned int task_t;
 #define DORMANT 0 //state of terminated task
 #define READY  1 //state of task that can be scheduled but is not running
 #define RUNNING 2 //state of running task
-#define CREATED 3
+#define SLEEPING 3
+#define CREATED 4
 // ----- End Of Thread States --------
 
 typedef struct task_control_block{
@@ -72,10 +73,11 @@ typedef struct task_control_block{
 	U32 current_sp; // top of stack
 	U32 original_stack_size; // Size of stack when TCB was initialized/created
 	void* args; // Arguments for function
+	U32 deadline_ms;
 } TCB;
 
 typedef struct kernel_variables {
-	unsigned int numAvaliableTasks; // Num of running and ready TCBs
+//	unsigned int numAvaliableTasks; // Num of running and ready TCBs
 	unsigned int totalStackUsed;
 	TCB tcbList[MAX_TASKS];
 	int currentRunningTID;
@@ -84,7 +86,6 @@ typedef struct kernel_variables {
 	int buddyHeapInit;
 	U32 endOfHeap; // never write to an address beyond this
 	U32 startOfHeap; // When allocating memory, never allocate to an address less than this. Remember heap grows from small to large address
-	U32 freeListSize; // Keep track of freeListSize so we don't need to iterate through it to determine count
 } Kernel_Variables;
 
 // ----- MALLOC stuff -----------

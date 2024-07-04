@@ -15,7 +15,6 @@
 // ------- Globals --------
 Kernel_Variables kernelVariables = {.currentRunningTID = -1,
 									.kernelInitRan = 0,
-									.numAvaliableTasks = 0,
 									.kernelStarted = 0,
 									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE,
 									.endOfHeap = 0,
@@ -322,7 +321,7 @@ __attribute__((always_inline))
 inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
 //	U32 parentOrder = CALCULATE_ORDER_FROM_FREELIST_IDX(parentFreeListIdx);
 	U32 newSize = parentBlock->size/2;
-	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock);
+	DEBUG_PRINTF("Starting address: %p\r\n", &parentBlock);
 
 	// ---- Create block ----
 	Block* createdBlock = (void*) ((U32)parentBlock + newSize);
@@ -450,7 +449,7 @@ inline Block* Get_Buddy(Block* block) {
 	DEBUG_PRINTF("  INFO: Block to dealloc address: %x, Buddy address: %x, Block to dealloc size: %d. XOR size value: %d.\r\n", block, buddyAddress, block->size, 1 << order);
 
 #ifdef DEBUG_ENABLE
-	if (buddy->magicNum == MAGIC_NUMBER_BLOCK) {
+	if (buddy->TIDofOwner == kernelVariables.currentRunningTID) {
 		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
 		return buddy;
 	} else {

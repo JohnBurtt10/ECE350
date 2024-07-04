@@ -28,7 +28,9 @@ int SVC_Handler_Main( unsigned int *svc_args )
     case TEST_ERROR:  /* EnablePrivilegedMode */
       break;
     case OS_CREATE_TASK:
-    	DEBUG_PRINTF(" SVC CREATE TASK\r\n");\
+    	DEBUG_PRINTF(" SVC CREATE TASK\r\n");
+
+    	// Create task. Then check if newly created task has a sooner deadline. If so, yield to it
 
     	return createTask((TCB*)svc_args[0]);
 
@@ -61,7 +63,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		DEBUG_PRINTF(" TASK EXIT\r\n");
 
 		// Check that the kernel has started and a task has been running
-		task_t current_TID = kernelVariables.currentRunningTID;
+		int current_TID = kernelVariables.currentRunningTID;
 		if(current_TID == -1){
 			return RTX_ERR;
 		}
@@ -72,7 +74,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			
 			// Change state to DORMANT removes the task from the scheduler */
 			kernelVariables.tcbList[current_TID].state = DORMANT;
-			kernelVariables.numAvaliableTasks--;
+//			kernelVariables.numAvaliableTasks--;
 			// Call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			__asm("isb");
@@ -106,6 +108,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			task_copy->stack_size = task.original_stack_size;
 			task_copy->state = task.state;
 			task_copy->tid = task.tid;
+			task_copy->deadline_ms = task.deadline_ms;
 
 			return RTX_OK;
 		}
@@ -172,10 +175,10 @@ int createTask(TCB* task) {
 		return RTX_ERR;
 	}
 
-	if (kernelVariables.numAvaliableTasks == MAX_TASKS){
-		DEBUG_PRINTF(" Failed to create task. Reached maximum allowed tasks\r\n");
-		return RTX_ERR;
-	}
+//	if (kernelVariables.numAvaliableTasks == MAX_TASKS){
+//		DEBUG_PRINTF(" Failed to create task. Reached maximum allowed tasks\r\n");
+//		return RTX_ERR;
+//	}
 
 	int TIDtoOverwrite = -1;
 	int TIDofEmptyTCB = MAX_SIGNED_INT_VALUE;
@@ -212,7 +215,7 @@ int createTask(TCB* task) {
 		tcbs[TIDtoOverwrite].args = task->args;
 
 		task->tid = TIDtoOverwrite;
-		kernelVariables.numAvaliableTasks++;
+//		kernelVariables.numAvaliableTasks++;
 
 		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, task->ptask, TIDtoOverwrite);
 		return RTX_OK;
@@ -233,11 +236,12 @@ int createTask(TCB* task) {
 		tcbs[TIDofEmptyTCB].current_sp = tcbs[TIDofEmptyTCB].stack_high;
 		tcbs[TIDofEmptyTCB].original_stack_size = task->stack_size;
 		tcbs[TIDofEmptyTCB].args = task->args;
+		tcbs[TIDofEmptyTCB].deadline_ms = 5;
 
 		task->tid = TIDofEmptyTCB;
 
 		kernelVariables.totalStackUsed += task->stack_size;
-		kernelVariables.numAvaliableTasks++;
+//		kernelVariables.numAvaliableTasks++;
 
 		Init_Thread_Stack((U32*)tcbs[TIDofEmptyTCB].current_sp, task->ptask, TIDofEmptyTCB);
 		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
