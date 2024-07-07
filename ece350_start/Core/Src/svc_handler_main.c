@@ -194,6 +194,9 @@ int createTask(TCB* task) {
 				currentTCB->deadline_ms = 5;
 				currentTCB->stack_size = task->stack_size;
 
+				Block* aucBlock = ACTUAL_BLOCK(block);
+				aucBlock->TIDofOwner = i;
+
 				task->tid = i;
 
 				Init_Thread_Stack((U32*)currentTCB->current_sp, task->ptask, i);
