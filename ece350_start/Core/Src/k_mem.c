@@ -13,7 +13,7 @@
 #include <assert.h>
 
 // ------- Globals --------
-Kernel_Variables kernelVariables = {.currentRunningTID = -1,
+Kernel_Variables kernelVariables = {.currentRunningTID  = -1,
 									.kernelInitRan = 0,
 									.kernelStarted = 0,
 									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE,
@@ -32,25 +32,24 @@ inline U32 CLZ(U32 num) {
 }
 
 void osKernelInit(void) {
-	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
 	kernelVariables.startOfHeap = (unsigned int)&_img_end;
 	kernelVariables.endOfHeap = (unsigned int)&_estack - (unsigned int)&_Min_Stack_Size;
+	k_mem_init();
+	osInitTCBArray();
 	return;
 }
 
 void osInitTCBArray(void) {
 	// Initializing null task
 	kernelVariables.tcbList[0].ptask = (void*) &Null_Task_Function;
-	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
+	kernelVariables.tcbList[0].stack_high = ((U32) k_mem_alloc(NULL_TASK_STACK_SIZE)) + NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].tid = TID_NULL;
 	kernelVariables.tcbList[0].state = READY;
 	kernelVariables.tcbList[0].stack_size = NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].current_sp = kernelVariables.tcbList[0].stack_high;
-	kernelVariables.tcbList[0].original_stack_size = NULL_TASK_STACK_SIZE;
-	kernelVariables.tcbList[0].args = NULL;
 
-	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].stack_high, kernelVariables.tcbList[0].ptask, 0);
+	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].current_sp, kernelVariables.tcbList[0].ptask, 0);
 
 	// Initialize each task 
 	for (int i = 1; i < MAX_TASKS; i++) {
@@ -60,8 +59,6 @@ void osInitTCBArray(void) {
 		kernelVariables.tcbList[i].state = CREATED;
 		kernelVariables.tcbList[i].stack_size = 0;
 		kernelVariables.tcbList[i].current_sp = 0x0;
-		kernelVariables.tcbList[i].original_stack_size = 0;
-		kernelVariables.tcbList[i].args = NULL;
 	}
 
 	return;
@@ -160,7 +157,7 @@ void* k_mem_alloc(size_t size)
 
 			currBlock = Free_List_Pop(required_idx);
 			currBlock->type = USED;
-			currBlock->TIDofOwner = (int8_t)kernelVariables.currentRunningTID;
+			currBlock->TIDofOwner = kernelVariables.currentRunningTID;
 			return (void*) ((U32) currBlock + sizeof(Block));
 		}
 
@@ -449,7 +446,7 @@ inline Block* Get_Buddy(Block* block) {
 	DEBUG_PRINTF("  INFO: Block to dealloc address: %x, Buddy address: %x, Block to dealloc size: %d. XOR size value: %d.\r\n", block, buddyAddress, block->size, 1 << order);
 
 #ifdef DEBUG_ENABLE
-	if (buddy->TIDofOwner == kernelVariables.currentRunningTID) {
+	if (buddy->TIDofOwner == kernelVariables.currentRunningTCB->tid) {
 		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
 		return buddy;
 	} else {

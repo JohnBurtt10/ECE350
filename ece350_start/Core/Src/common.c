@@ -27,7 +27,7 @@ unsigned int Get_Total_Memory_Used() {
 int Scheduler(void) {
 	int TIDTaskToRun = 0;
 	// Start from current running tid and find next one to run
-	for (int i = kernelVariables.currentRunningTID + 1; i <= MAX_TASKS + kernelVariables.currentRunningTID; i++) {
+	for (int i = kernelVariables.currentRunningTID + 1; i <= MAX_TASKS + kernelVariables.currentRunningTID ; i++) {
 		int TID = i % MAX_TASKS;
 
 		// Ignore null task. Find a TID that is in the ready state.

@@ -9,6 +9,7 @@
 #include "stm32f4xx_it.h"
 #include "k_task.h"
 #include "main.h"
+#include "k_mem.h"
 #include <stdio.h>
 
 int SVC_Handler_Main( unsigned int *svc_args )
@@ -48,7 +49,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	break;
     case OS_KERNEL_START:
 		// Check if the kernel is already initialized or running
-    	if (kernelVariables.currentRunningTID != -1 || kernelVariables.kernelInitRan != 1){
+    	if (kernelVariables.kernelInitRan == 0){
     		DEBUG_PRINTF(" The kernel has not been initialized\r\n");
 
     		return RTX_ERR;
@@ -63,18 +64,20 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		DEBUG_PRINTF(" TASK EXIT\r\n");
 
 		// Check that the kernel has started and a task has been running
-		int current_TID = kernelVariables.currentRunningTID;
-		if(current_TID == -1){
+		if(kernelVariables.currentRunningTID == -1){
 			return RTX_ERR;
 		}
 
-		if(kernelVariables.tcbList[current_TID].state == RUNNING){
+		TCB* currentTask = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
+		if(currentTask->state == RUNNING){
 			// Reset the exiting tasks stackpointer to the top of the stack to be reused
-			__set_PSP(kernelVariables.tcbList[kernelVariables.currentRunningTID].stack_high);
+			__set_PSP(currentTask->stack_high);
 			
 			// Change state to DORMANT removes the task from the scheduler */
-			kernelVariables.tcbList[current_TID].state = DORMANT;
-//			kernelVariables.numAvaliableTasks--;
+			currentTask->state = DORMANT;
+
+			int rrt = k_mem_dealloc((void*) (currentTask->stack_high - currentTask->stack_size));
+
 			// Call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			__asm("isb");
@@ -101,11 +104,10 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			}
 
 			/* Fill the TCB pointed to by task_copy with the fields TID specified */
-			task_copy->args = task.args;
 			task_copy->current_sp = task.current_sp;
 			task_copy->ptask = task.ptask;
 			task_copy->stack_high = task.stack_high;
-			task_copy->stack_size = task.original_stack_size;
+			task_copy->stack_size = task.stack_size;
 			task_copy->state = task.state;
 			task_copy->tid = task.tid;
 			task_copy->deadline_ms = task.deadline_ms;
@@ -131,14 +133,15 @@ int SVC_Handler_Main( unsigned int *svc_args )
 }
 
 void contextSwitch(void) {
-	// If there is a current running task, set it to running
+	// If there is a current running task, set it to ready
 	if (kernelVariables.currentRunningTID != -1) {
 		// Find next task to run
-		kernelVariables.tcbList[kernelVariables.currentRunningTID].current_sp = __get_PSP();
+		int current_TID = kernelVariables.currentRunningTID;
+		kernelVariables.tcbList[current_TID].current_sp = __get_PSP();
 
 		// Update current task to READY if yielding from task, if exiting, state remains dormant
-		if (kernelVariables.tcbList[kernelVariables.currentRunningTID].state == RUNNING){
-			kernelVariables.tcbList[kernelVariables.currentRunningTID].state = READY;
+		if (kernelVariables.tcbList[current_TID].state == RUNNING){
+			kernelVariables.tcbList[current_TID].state = READY;
 		}
 	}
 	
@@ -157,8 +160,6 @@ void save_new_psp(void){
 }
 
 int createTask(TCB* task) {
-	TCB* tcbs = kernelVariables.tcbList;
-
 	// Check that task exists, there is enough stack space, and other criterias
 	if (task == NULL) {
 		DEBUG_PRINTF(" Failed to create task. User passed in NULL task.\r\n");
@@ -175,79 +176,32 @@ int createTask(TCB* task) {
 		return RTX_ERR;
 	}
 
-//	if (kernelVariables.numAvaliableTasks == MAX_TASKS){
-//		DEBUG_PRINTF(" Failed to create task. Reached maximum allowed tasks\r\n");
-//		return RTX_ERR;
-//	}
+	/*
+	 * Since we our using our new heap to allocate/deallocate. We can just attempt to allocate a new memory region. If it fails, we do not have space.
+	 */
 
-	int TIDtoOverwrite = -1;
-	int TIDofEmptyTCB = MAX_SIGNED_INT_VALUE;
-	int TCBStackSmallest = MAX_SIGNED_INT_VALUE;
-	for (int i = 1; i < MAX_TASKS; i++) {
-		// Found terminated task. Check if we can fit the new TCB into it.
-		if (tcbs[i].state == DORMANT) {
-			// Fragmentation, use TCB with smallest valid stack size
-			if (task->stack_size <= tcbs[i].original_stack_size){
-				if (tcbs[i].original_stack_size < TCBStackSmallest){
-					TCBStackSmallest = tcbs[i].original_stack_size;
-					TIDtoOverwrite = i;
-				}
+	void* block = k_mem_alloc(task->stack_size);
+
+	if (block != NULL) {
+		// Iterate through all blocks and find a free block.
+		for (int i = 1; i < MAX_TASKS; i++) {
+			TCB* currentTCB = &kernelVariables.tcbList[i];
+			if (currentTCB->state == DORMANT || currentTCB->state == CREATED) {
+				currentTCB->ptask = task->ptask;
+				currentTCB->stack_high = (U32) block + task->stack_size;
+				currentTCB->state = READY;
+				currentTCB->current_sp = currentTCB->stack_high;
+				currentTCB->deadline_ms = 5;
+				currentTCB->stack_size = task->stack_size;
+
+				task->tid = i;
+
+				Init_Thread_Stack((U32*)currentTCB->current_sp, task->ptask, i);
+
+				return RTX_OK;
 			}
 		}
-
-		// Found uninitialized TCB
-		int currentTID = i;
-		if (tcbs[i].state == CREATED){
-			if (currentTID <= TIDofEmptyTCB) {
-				TIDofEmptyTCB = i;
-			}
-		}
 	}
-
-	// Check if there is an existing TCB that can be used for the task
-	if (TIDtoOverwrite != -1) {
-		DEBUG_PRINTF("Found TCB To Overwrite with TID: %d. Stack size: %d\r\n", TIDtoOverwrite, tcbs[TIDtoOverwrite].stack_size);
-
-		tcbs[TIDtoOverwrite].ptask = task->ptask;
-		tcbs[TIDtoOverwrite].state = READY;
-		tcbs[TIDtoOverwrite].current_sp = tcbs[TIDtoOverwrite].stack_high;
-		tcbs[TIDtoOverwrite].stack_size = task->stack_size;
-		tcbs[TIDtoOverwrite].args = task->args;
-
-		task->tid = TIDtoOverwrite;
-//		kernelVariables.numAvaliableTasks++;
-
-		Init_Thread_Stack((U32*)tcbs[TIDtoOverwrite].current_sp, task->ptask, TIDtoOverwrite);
-		return RTX_OK;
-	}
-
-	// Check if there's a new TCB for the new task, copying so that task becomes ready to use
-	if (TIDofEmptyTCB != 2147483647) {
-		if (kernelVariables.totalStackUsed + task->stack_size > MAX_STACK_SIZE){
-			DEBUG_PRINTF(" Failed to create task. Not enough memory\r\n");
-			return RTX_ERR;
-		}
-
-		tcbs[TIDofEmptyTCB].ptask = task->ptask;
-		tcbs[TIDofEmptyTCB].stack_high = (U32)Get_Thread_Stack(task->stack_size);
-		tcbs[TIDofEmptyTCB].tid = TIDofEmptyTCB;
-		tcbs[TIDofEmptyTCB].state = READY;
-		tcbs[TIDofEmptyTCB].stack_size = task->stack_size;
-		tcbs[TIDofEmptyTCB].current_sp = tcbs[TIDofEmptyTCB].stack_high;
-		tcbs[TIDofEmptyTCB].original_stack_size = task->stack_size;
-		tcbs[TIDofEmptyTCB].args = task->args;
-		tcbs[TIDofEmptyTCB].deadline_ms = 5;
-
-		task->tid = TIDofEmptyTCB;
-
-		kernelVariables.totalStackUsed += task->stack_size;
-//		kernelVariables.numAvaliableTasks++;
-
-		Init_Thread_Stack((U32*)tcbs[TIDofEmptyTCB].current_sp, task->ptask, TIDofEmptyTCB);
-		DEBUG_PRINTF("Found Empty TCB with TID: %d\r\n", TIDofEmptyTCB);
-		return RTX_OK;
-	}
-
 
 	// All free TCB's are currently in use or there is no TCB with enough space to accommodate new task.
 	DEBUG_PRINTF("Failed to create new task. All tasks are currently in use, or there is no TCB with enough space to accommodate new task\r\n");
@@ -255,7 +209,7 @@ int createTask(TCB* task) {
 }
 
 
-void Init_Thread_Stack(U32* stack_pointer, void (*callback)(void* args), int TID){
+inline void Init_Thread_Stack(U32* stack_pointer, void (*callback)(void* args), int TID){
 	DEBUG_PRINTF(" CURRENT_SP ADDRESS: %p\r\n", stack_pointer);
 	*(--stack_pointer) = 1 << 24; // xPSR register, setting chip to "Thumb" mode
 	*(--stack_pointer) = (uint32_t)callback; // PC Register storing next instruction

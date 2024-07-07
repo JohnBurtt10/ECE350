@@ -12,8 +12,7 @@
 #define INC_COMMON_H_
 
 #include <stdint.h>
-
- #define DEBUG_ENABLE // Comment me out to disable debugging
+// #define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
@@ -41,7 +40,6 @@
 #define STACK_SIZE 0x200
 
 #define TID_NULL 0 //predefined Task ID for the NULL task
-#define MAX_TASKS 16 //maximum number of tasks in the system including null task
 #define MAX_USER_TASKS MAX_TASKS - 1 // Maximum number of user tasks.
 #define NULL_TASK_STACK_SIZE 0x400
 
@@ -64,30 +62,6 @@ typedef unsigned int task_t;
 #define CREATED 4
 // ----- End Of Thread States --------
 
-typedef struct task_control_block{
-	void (*ptask)(void* args); //entry address
-	U32 stack_high; //starting address of stack (high address)
-	task_t tid; //task ID
-	U8 state; //task's state
-	U16 stack_size; //stack size. Must be a multiple of 8
-	U32 current_sp; // top of stack
-	U32 original_stack_size; // Size of stack when TCB was initialized/created
-	void* args; // Arguments for function
-	U32 deadline_ms;
-} TCB;
-
-typedef struct kernel_variables {
-//	unsigned int numAvaliableTasks; // Num of running and ready TCBs
-	unsigned int totalStackUsed;
-	TCB tcbList[MAX_TASKS];
-	int currentRunningTID;
-	int kernelInitRan;
-	int kernelStarted;
-	int buddyHeapInit;
-	U32 endOfHeap; // never write to an address beyond this
-	U32 startOfHeap; // When allocating memory, never allocate to an address less than this. Remember heap grows from small to large address
-} Kernel_Variables;
-
 // ----- MALLOC stuff -----------
 #define LOWEST_RAM_ADDRESS 0x20000000
 #define MIN_BLOCK_ORDER 5 // Min size of a block.
@@ -98,10 +72,35 @@ typedef struct kernel_variables {
 #define USED 1
 #define FREE 0
 
+typedef struct task_control_block{
+	void (*ptask)(void* args); //entry address
+	U32 stack_high; //starting address of stack (high address)
+	U16 tid; //task ID
+	U8 state; //task's state
+	U16 stack_size; //stack size. Must be a multiple of 8
+	U32 current_sp; // top of stack
+	U32 deadline_ms;
+} TCB;
+
+#define SMALLEST_TASK_ALLOC 128 // Assuming sizeof(TCB) = 32
+#define MAX_TASKS ((1 << 15) / SMALLEST_TASK_ALLOC) //maximum number of tasks in the system including null task
+
+typedef struct kernel_variables {
+//	unsigned int numAvaliableTasks; // Num of running and ready TCBs
+	unsigned int totalStackUsed;
+	TCB tcbList[MAX_TASKS]; //TODO: Try to implement this as a linked list. Store our TCB's in the heap along with the thread stack
+	int currentRunningTID;
+	U8 kernelInitRan;
+	U8 kernelStarted;
+	U8 buddyHeapInit;
+	U32 endOfHeap; // never write to an address beyond this
+	U32 startOfHeap; // When allocating memory, never allocate to an address less than this. Remember heap grows from small to large address
+} Kernel_Variables;
+
 typedef struct Block {
 	U8 type; // FREE/USED
 	uint16_t size; // Block size including sizeof(Block)
-	int8_t TIDofOwner;
+	task_t TIDofOwner;
 	struct Block* next; // Points to the start of the next block
 	struct Block* prev;
 } Block;

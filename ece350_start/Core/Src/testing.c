@@ -243,8 +243,6 @@ void Init_Task(TCB* task){
 	task->state = READY;
 	task->stack_size = 0x200;
 	task->current_sp = task->stack_high;
-	task->original_stack_size = 0x200;
-	task->args = NULL;
 }
 
 void Init_Task_2(TCB* task){
@@ -253,8 +251,6 @@ void Init_Task_2(TCB* task){
 	task->state = READY;
 	task->stack_size = 0x200;
 	task->current_sp = task->stack_high;
-	task->original_stack_size = 0x200;
-	task->args = NULL;
 }
 
 void Init_Task_3(TCB* task){
@@ -263,8 +259,6 @@ void Init_Task_3(TCB* task){
 	task->state = READY;
 	task->stack_size = 0x200;
 	task->current_sp = task->stack_high;
-	task->original_stack_size = 0x200;
-	task->args = NULL;
 }
 
 void Test_osCreateTask() {

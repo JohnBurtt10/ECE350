@@ -60,32 +60,32 @@ task_t osGetTID (void) {
 	return tid;
 }
 
-uint32_t* Get_Thread_Stack(unsigned int stack_size){
-	// Ensuring that there is enough space in the thread stack
-	if (stack_size < STACK_SIZE){
-		DEBUG_PRINTF("  Failed to get starting address for thread stack due to stack size being too small\r\n");
-		return NULL;
-	}
-
-	if (kernelVariables.totalStackUsed + stack_size > MAX_STACK_SIZE){
-		DEBUG_PRINTF("  Failed to get starting address for thread stack due not enough memory\r\n");
-		return NULL;
-	}
-
-	// ARM Cortex architecture grows stack grows downwards (high address to low address)
-	uint32_t newStackStart = (unsigned int)Get_MSP_INIT_VAL() - MAIN_STACK_SIZE; // Starting position
-
-	// Iterate through the stacks of each tcb to get the starting address
-	for (int i = 0; i < MAX_TASKS; i++) {
-		newStackStart -= kernelVariables.tcbList[i].original_stack_size;
-	}
-
-	DEBUG_PRINTF("  Found starting address for thread stack: %p. Size: %d\r\n", (uint32_t*)newStackStart, stack_size);
-	return (uint32_t*) newStackStart;
-}
+//uint32_t* Get_Thread_Stack(unsigned int stack_size){
+//	// Ensuring that there is enough space in the thread stack
+//	if (stack_size < STACK_SIZE){
+//		DEBUG_PRINTF("  Failed to get starting address for thread stack due to stack size being too small\r\n");
+//		return NULL;
+//	}
+//
+//	if (kernelVariables.totalStackUsed + stack_size > MAX_STACK_SIZE){
+//		DEBUG_PRINTF("  Failed to get starting address for thread stack due not enough memory\r\n");
+//		return NULL;
+//	}
+//
+//	// ARM Cortex architecture grows stack grows downwards (high address to low address)
+//	uint32_t newStackStart = (unsigned int)Get_MSP_INIT_VAL() - MAIN_STACK_SIZE; // Starting position
+//
+//	// Iterate through the stacks of each tcb to get the starting address
+//	for (int i = 0; i < MAX_TASKS; i++) {
+//		newStackStart -= kernelVariables.tcbList[i].original_stack_size;
+//	}
+//
+//	DEBUG_PRINTF("  Found starting address for thread stack: %p. Size: %d\r\n", (uint32_t*)newStackStart, stack_size);
+//	return (uint32_t*) newStackStart;
+//}
 
 void Null_Task_Function(void) {
-	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
+	printf("  IN NULL TASK :(\r\n");
 
 	while (1);
 
