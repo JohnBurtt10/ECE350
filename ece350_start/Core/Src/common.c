@@ -40,3 +40,28 @@ int Scheduler(void) {
 	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
 	return TIDTaskToRun;
 }
+
+__attribute__((always_inline))
+inline int EDFScheduler(void) {
+	int TIDTaskToRun = 0;
+	U32 shortestDeadline = kernelVariables.tcbList[0].deadline_ms;
+
+	for (int i = 1; i < MAX_TASKS; i++) {
+		TCB currentTCB = kernelVariables.tcbList[i];
+
+		if (currentTCB.state == SLEEPING && currentTCB.remainingTime == 0) {
+			currentTCB.state = READY;
+			currentTCB.remainingTime = currentTCB.deadline_ms;
+		}
+
+		if (currentTCB.state == READY) {
+			if (currentTCB.deadline_ms < shortestDeadline || (currentTCB.deadline_ms == shortestDeadline && currentTCB.tid < TIDTaskToRun)) {
+				shortestDeadline = currentTCB.deadline_ms;
+				TIDTaskToRun = i;
+			}
+		}
+	}
+
+	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
+	return TIDTaskToRun;
+}

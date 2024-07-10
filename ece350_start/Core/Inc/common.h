@@ -31,6 +31,8 @@
 #define OS_TASK_EXIT 4
 #define OS_TASK_INFO 5
 #define OS_GET_TID 6
+#define OS_SET_DEADLINE 7
+#define OS_SLEEP 8
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script
@@ -79,11 +81,12 @@ typedef struct task_control_block{
 	U8 state; //task's state
 	U16 stack_size; //stack size. Must be a multiple of 8
 	U32 current_sp; // top of stack
+	U32 remainingTime;
 	U32 deadline_ms;
 } TCB;
 
 #define SMALLEST_TASK_ALLOC 128 // Assuming sizeof(TCB) = 32
-#define MAX_TASKS ((1 << 15) / SMALLEST_TASK_ALLOC) //maximum number of tasks in the system including null task
+#define MAX_TASKS 16 //maximum number of tasks in the system including null task
 
 typedef struct kernel_variables {
 //	unsigned int numAvaliableTasks; // Num of running and ready TCBs
@@ -119,6 +122,7 @@ extern BuddyHeap buddyHeap;
 extern uint32_t _img_end;
 extern uint32_t _estack;
 extern uint32_t _Min_Stack_Size;
+extern U32 timerCounter;
 /**
  * @brief: Returns the MSP address
  */
@@ -133,5 +137,10 @@ unsigned int Get_Total_Memory_Used();
  * @brief: Finds the next TCB to run and returns the TID
 */
 int Scheduler(void);
+
+/**
+ * @brief: Finds the next TCB to run and returns the TID
+*/
+int EDFScheduler(void);
 
 #endif /* INC_COMMON_H_ */

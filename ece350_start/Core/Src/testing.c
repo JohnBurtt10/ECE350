@@ -89,7 +89,7 @@ int main(void)
 //	DEBUG_PRINTF("First Block TID of Owner: %d\r\n", firstBlock->TIDofOwner);
 //	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
 //	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
-    int block_size = 16000;
+    int block_size = 32;
 
 	int test = Calculate_Order(block_size);
 	DEBUG_PRINTF("Order of 32: %d\r\n", test);
@@ -124,6 +124,8 @@ int main(void)
 
     Print_Free_List();
     DEBUG_PRINTF("\r\n");
+
+    osKernelStart();
 
 //    // Test the case when the pointer is NULL
 //    k_mem_dealloc(ptr);

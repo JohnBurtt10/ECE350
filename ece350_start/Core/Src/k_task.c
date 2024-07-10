@@ -60,43 +60,38 @@ task_t osGetTID (void) {
 	return tid;
 }
 
-//uint32_t* Get_Thread_Stack(unsigned int stack_size){
-//	// Ensuring that there is enough space in the thread stack
-//	if (stack_size < STACK_SIZE){
-//		DEBUG_PRINTF("  Failed to get starting address for thread stack due to stack size being too small\r\n");
-//		return NULL;
-//	}
-//
-//	if (kernelVariables.totalStackUsed + stack_size > MAX_STACK_SIZE){
-//		DEBUG_PRINTF("  Failed to get starting address for thread stack due not enough memory\r\n");
-//		return NULL;
-//	}
-//
-//	// ARM Cortex architecture grows stack grows downwards (high address to low address)
-//	uint32_t newStackStart = (unsigned int)Get_MSP_INIT_VAL() - MAIN_STACK_SIZE; // Starting position
-//
-//	// Iterate through the stacks of each tcb to get the starting address
-//	for (int i = 0; i < MAX_TASKS; i++) {
-//		newStackStart -= kernelVariables.tcbList[i].original_stack_size;
-//	}
-//
-//	DEBUG_PRINTF("  Found starting address for thread stack: %p. Size: %d\r\n", (uint32_t*)newStackStart, stack_size);
-//	return (uint32_t*) newStackStart;
-//}
+int osSetDeadline(int deadline, task_t TID) {
+	if (deadline <= 0 || TID <= 0 || TID >= MAX_TASKS) {
+		return RTX_ERR;
+	}
+
+	U32 output;
+
+	TRIGGER_SVC(OS_SET_DEADLINE);
+	__asm("MOV %0, R0": "=r"(output));
+
+	return output;
+}
+
+int osTaskExit(void){
+	int taskExitStatus;
+
+	TRIGGER_SVC(OS_TASK_EXIT);
+	__asm("MOV %0, R0": "=r"(taskExitStatus));
+
+	return taskExitStatus;
+}
+
+void osSleep(int timeInMs) {
+	TRIGGER_SVC(OS_SLEEP);
+	TRIGGER_SVC(OS_YIELD);
+}
 
 void Null_Task_Function(void) {
-	printf("  IN NULL TASK :(\r\n");
+	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
 
 	while (1);
 
 	return;
 }
 
-int osTaskExit(void){	
-	int taskExitStatus;
-
-	TRIGGER_SVC(OS_TASK_EXIT);
-	__asm("MOV %0, R0": "=r"(taskExitStatus));
-	
-	return taskExitStatus;
-}

@@ -35,15 +35,21 @@ void osKernelInit(void) {
 	kernelVariables.kernelInitRan = 1;
 	kernelVariables.startOfHeap = (unsigned int)&_img_end;
 	kernelVariables.endOfHeap = (unsigned int)&_estack - (unsigned int)&_Min_Stack_Size;
+
+	// https://piazza.com/class/lvlcv9pc4496o8/post/227
+	SHPR3 |= 0xFFU << 24; //Set the priority of SysTick to be the weakest
+	SHPR3 |= 0xFEU << 16; //shift the constant 0xFE 16 bits to set PendSV priority
+	SHPR2 |= 0xFDU << 24; //set the priority of SVC higher than PendSV
 	k_mem_init();
 	osInitTCBArray();
 	return;
 }
 
 void osInitTCBArray(void) {
+	Block* block = k_mem_alloc(NULL_TASK_STACK_SIZE);
 	// Initializing null task
 	kernelVariables.tcbList[0].ptask = (void*) &Null_Task_Function;
-	kernelVariables.tcbList[0].stack_high = ((U32) k_mem_alloc(NULL_TASK_STACK_SIZE)) + NULL_TASK_STACK_SIZE;
+	kernelVariables.tcbList[0].stack_high = (U32) block + NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].tid = TID_NULL;
 	kernelVariables.tcbList[0].state = READY;
 	kernelVariables.tcbList[0].stack_size = NULL_TASK_STACK_SIZE;
@@ -190,7 +196,7 @@ int k_mem_dealloc(void* ptr) {
 
 	// If the magic number does not match, or if the TID does not match the owner TID, or the block is already FREE, log and return an error.
 	if (kernelVariables.currentRunningTID != block->TIDofOwner || block->type == FREE) {
-		DEBUG_PRINTF("  ERROR: The block is not a valid block to free.");
+		DEBUG_PRINTF("  ERROR: The block is not a valid block to free.\r\n");
 		return RTX_ERR;
 	}
 
@@ -446,7 +452,7 @@ inline Block* Get_Buddy(Block* block) {
 	DEBUG_PRINTF("  INFO: Block to dealloc address: %x, Buddy address: %x, Block to dealloc size: %d. XOR size value: %d.\r\n", block, buddyAddress, block->size, 1 << order);
 
 #ifdef DEBUG_ENABLE
-	if (buddy->TIDofOwner == kernelVariables.currentRunningTCB->tid) {
+	if (buddy->TIDofOwner == kernelVariables.currentRunningTID) {
 		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
 		return buddy;
 	} else {

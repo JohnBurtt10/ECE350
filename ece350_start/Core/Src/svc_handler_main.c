@@ -9,6 +9,7 @@
 #include "stm32f4xx_it.h"
 #include "k_task.h"
 #include "main.h"
+#include "common.h"
 #include "k_mem.h"
 #include <stdio.h>
 
@@ -76,8 +77,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			// Change state to DORMANT removes the task from the scheduler */
 			currentTask->state = DORMANT;
 
-			int rrt = k_mem_dealloc((void*) (currentTask->stack_high - currentTask->stack_size));
-
+			k_mem_dealloc((void*) (currentTask->stack_high - currentTask->stack_size));
 			// Call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			__asm("isb");
@@ -111,6 +111,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			task_copy->state = task.state;
 			task_copy->tid = task.tid;
 			task_copy->deadline_ms = task.deadline_ms;
+			task_copy->remainingTime = task.remainingTime;
 
 			return RTX_OK;
 		}
@@ -125,6 +126,30 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
 		return kernelVariables.currentRunningTID;
 		break;
+	case OS_SET_DEADLINE:
+		int deadline = (int) svc_args[0];
+		TID = (task_t) svc_args[1];
+		if (kernelVariables.tcbList[TID].state != READY) {
+			return RTX_ERR;
+		}
+
+		kernelVariables.tcbList[TID].deadline_ms = deadline;
+
+		/*
+		 * After updating deadline, run EDF Scheduler
+		 * If the current running TID differs from scheduler, pre-empt current running task.
+		*/
+
+		break;
+	case OS_SLEEP:
+		int timeInMs = (int) svc_args[0];
+
+		// Set current running task to status of sleep, and set its remainingTIme to timeInMs
+		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
+		currentTCB->state = SLEEPING;
+		currentTCB->remainingTime = timeInMs;
+
+		break;
     default:    /* unknown SVC */
     	break;
   }
@@ -136,12 +161,14 @@ void contextSwitch(void) {
 	// If there is a current running task, set it to ready
 	if (kernelVariables.currentRunningTID != -1) {
 		// Find next task to run
-		int current_TID = kernelVariables.currentRunningTID;
-		kernelVariables.tcbList[current_TID].current_sp = __get_PSP();
+		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
+		currentTCB->current_sp = __get_PSP();
+
+		currentTCB->remainingTime = currentTCB->deadline_ms;
 
 		// Update current task to READY if yielding from task, if exiting, state remains dormant
-		if (kernelVariables.tcbList[current_TID].state == RUNNING){
-			kernelVariables.tcbList[current_TID].state = READY;
+		if (currentTCB->state == RUNNING){
+			currentTCB->state = READY;
 		}
 	}
 	
@@ -193,8 +220,9 @@ int createTask(TCB* task) {
 				currentTCB->current_sp = currentTCB->stack_high;
 				currentTCB->deadline_ms = 5;
 				currentTCB->stack_size = task->stack_size;
+				currentTCB->remainingTime = 5;
 
-				Block* aucBlock = ACTUAL_BLOCK(block);
+				Block* aucBlock = (Block*) ACTUAL_BLOCK(block);
 				aucBlock->TIDofOwner = i;
 
 				task->tid = i;
