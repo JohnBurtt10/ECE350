@@ -43,6 +43,9 @@ int SVC_Handler_Main( unsigned int *svc_args )
     		break;
     	}
 
+		// Reset task's time remaining back to its deadline
+		kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
+
     	// Save current task state.
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
