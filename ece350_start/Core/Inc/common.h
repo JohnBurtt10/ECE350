@@ -12,7 +12,7 @@
 #define INC_COMMON_H_
 
 #include <stdint.h>
-// #define DEBUG_ENABLE // Comment me out to disable debugging
+#define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
@@ -22,6 +22,12 @@
 
 
 #define TRIGGER_SVC(X) __asm("SVC %0" : : "i" (X))
+
+#define SYST_CSR (uint32_t*) 0xE000E010
+
+
+#define DISABLE_SYSTICK_INT *SYST_CSR ^= 1 << 1;
+#define ENABLE_SYSTICK_INT *SYST_CSR |= 1 << 1;
 
 // ----------- SVC CALLS -----------
 #define TEST_ERROR 0

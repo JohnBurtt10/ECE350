@@ -62,6 +62,6 @@ inline int EDFScheduler(void) {
 		}
 	}
 
-	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
+//	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
 	return TIDTaskToRun;
 }

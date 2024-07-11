@@ -30,9 +30,9 @@ int osKernelStart(void) {
 	__asm("MOV %0, R0": "=r"(output));
 
 	/* If the kernel was successful started, call osYield to run the first task */
-	if (output == RTX_OK){
-		TRIGGER_SVC(OS_YIELD);
-	}
+//	if (output == RTX_OK){
+//		TRIGGER_SVC(OS_YIELD);
+//	}
 
 	return output;
 }

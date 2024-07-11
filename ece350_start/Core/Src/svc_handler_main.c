@@ -43,6 +43,8 @@ int SVC_Handler_Main( unsigned int *svc_args )
     		break;
     	}
 
+    	kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
+
     	// Save current task state.
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
@@ -56,6 +58,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
     		return RTX_ERR;
     	}
 
+    	ENABLE_SYSTICK_INT;
     	// Return, then perform yield
     	kernelVariables.kernelStarted = 1;
     	return RTX_OK;
@@ -228,6 +231,10 @@ int createTask(TCB* task) {
 				task->tid = i;
 
 				Init_Thread_Stack((U32*)currentTCB->current_sp, task->ptask, i);
+
+				if (currentTCB->remainingTime < kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime) {
+					TRIGGER_SVC(OS_YIELD);
+				}
 
 				return RTX_OK;
 			}

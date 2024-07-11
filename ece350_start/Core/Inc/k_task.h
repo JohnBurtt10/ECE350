@@ -16,7 +16,8 @@
 #define SHPR2 *(uint32_t*)0xE000ED1C //for setting SVC priority, bits 31-24
 #define SHPR3 *(uint32_t*)0xE000ED20 //PendSV is bits 23-16
 
-#define SYST_CVR *(uint32_t*) 0xE000E018 // SysTick Current Value Register
+// https://developer.arm.com/documentation/101407/0540/Debugging/Debug-Windows-and-Dialogs/Core-Peripherals/Armv7-M-cores/Armv7-M--System-Tick-Timer
+#define ST_CURRENT *(uint32_t*) 0xE000E018 // SysTick Current Value Register
 
 /**
  * @brief: Creates a new thread stack. Returns pointer to top of stack.

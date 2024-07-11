@@ -190,13 +190,13 @@ void SysTick_Handler(void)
 	  return;
   }
 
-  // SysTick Handler is ran every 1ms.
-  task_t TID = EDFScheduler();
-//  if (TID != kernelVariables.currentRunningTID) {
-//	  SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
-//	  __asm("isb");
+//  // SysTick Handler is ran every 1ms.
+//  for (int i = 1; i < MAX_TASKS; i++) {
+//	  kernelVariables.tcbList[i].remainingTime--;
 //  }
-  // Run Scheduler and check if a switch is needed.
+//
+//  SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+//  __asm("isb");
 
   /* USER CODE END SysTick_IRQn 1 */
 }
