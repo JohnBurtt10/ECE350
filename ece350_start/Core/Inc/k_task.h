@@ -82,4 +82,9 @@ int osSetDeadline(int deadline, task_t TID);
 
 void osSleep(int timeInMs);
 
+/**
+ * @brief: Schedules the periodic task only if the current period has elapsed
+ */
+void osPeriodYield();
+
 #endif /* INC_K_TASK_H_ */

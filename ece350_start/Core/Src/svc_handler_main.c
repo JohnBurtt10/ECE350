@@ -44,6 +44,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
     	}
 
 		// Reset task's time remaining back to its deadline
+		// TODO: maybe can move into contextSwitch() function
 		kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
 
     	// Save current task state.
@@ -153,6 +154,21 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		currentTCB->remainingTime = timeInMs;
 
 		break;
+	case OS_PERIOD_YIELD:
+		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
+		// Verify that periodic task has completed the current instance
+		// Check if remaining period time is 0 (current time period elapses)
+		if(currentTCB->remainingTime == 0){
+			// Call EDF Scheduler on task if period is finished and CPU is available
+			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler to call scheduler and context switch
+    		__asm("isb");
+
+			// Reset remaining time to the deadline at the end of the period
+			kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
+
+		}
+		
+		break;
     default:    /* unknown SVC */
     	break;
   }
@@ -177,7 +193,7 @@ void contextSwitch(void) {
 	
 
 	// Calls scheduler to run the next task 
-	int nextTID = Scheduler();
+	int nextTID = EDFScheduler();
 	__set_PSP(kernelVariables.tcbList[nextTID].current_sp);
 
 	kernelVariables.currentRunningTID = nextTID;

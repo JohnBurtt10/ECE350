@@ -33,6 +33,7 @@
 #define OS_GET_TID 6
 #define OS_SET_DEADLINE 7
 #define OS_SLEEP 8
+#define OS_PERIOD_YIELD 9
 
 // Treat stack as giant array of integers. Break up stack and keep track of multiple stacks for threads
 #define MAX_STACK_SIZE 0x4000 // Must match _Min_Stack_Size in the linker script

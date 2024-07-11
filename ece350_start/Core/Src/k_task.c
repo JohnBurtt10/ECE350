@@ -87,6 +87,10 @@ void osSleep(int timeInMs) {
 	TRIGGER_SVC(OS_YIELD);
 }
 
+void osPeriodYield(){
+	TRIGGER_SVC(OS_PERIOD_YIELD);
+}
+
 void Null_Task_Function(void) {
 	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
 
