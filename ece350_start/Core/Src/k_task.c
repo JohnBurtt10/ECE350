@@ -77,7 +77,6 @@ int osTaskExit(void){
 
 void osSleep(int timeInMs) {
 	TRIGGER_SVC(OS_SLEEP);
-	TRIGGER_SVC(OS_YIELD);
 }
 
 int osSetDeadline(int deadline, task_t TID) {

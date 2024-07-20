@@ -151,6 +151,10 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		currentTCB->state = SLEEPING;
 		currentTCB->remainingTime = timeInMs;
 
+		// Save current task state.
+		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+		__asm("isb");
+
 		break;
 	case OS_CREATE_DEADLINE_TASK:
 		if ((U32)svc_args[0] <= 0) {
