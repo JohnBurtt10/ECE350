@@ -23,7 +23,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
   * First argument (r0) is svc_args[0]
   */
   svc_number = ( ( char * )svc_args[ 6 ] )[ -2 ] ;
-  DEBUG_PRINTF("System call number: %d\r\n", svc_number );
+//  DEBUG_PRINTF("System call number: %d\r\n", svc_number );
 
   switch( svc_number )
   {
@@ -38,10 +38,12 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
     	break;
     case OS_YIELD:
-    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
+//    	DEBUG_PRINTF(" PERFORMING OS_YIELD\r\n");
     	if (kernelVariables.kernelStarted == 0) {
     		break;
     	}
+
+    	kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
 
     	// Save current task state.
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
@@ -81,7 +83,6 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			// Call the scheduler to yield and run the next task
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			__asm("isb");
-
 			return RTX_OK;
 		}
 
@@ -90,7 +91,6 @@ int SVC_Handler_Main( unsigned int *svc_args )
         break;
 	case OS_TASK_INFO:
 		DEBUG_PRINTF(" OS_TASK_INFO CALLED\r\n");
-
 		int TID = (int) svc_args[0];
 		TCB* task_copy = (TCB*) svc_args[1];
 		// Check that the TID value is valid and exists
@@ -148,6 +148,28 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		currentTCB->state = SLEEPING;
 		currentTCB->remainingTime = timeInMs;
+
+		break;
+	case OS_CREATE_DEADLINE_TASK:
+		if ((U32)svc_args[0] <= 0) {
+			return RTX_ERR;
+		}
+
+		TCB* tcb = (TCB*)svc_args[1];
+		int result = createTask(tcb);
+		kernelVariables.tcbList[tcb->tid].deadline_ms = (U32) svc_args[0];
+		kernelVariables.tcbList[tcb->tid].remainingTime = (U32) svc_args[0];
+
+		if (result == RTX_OK) {
+			// If the caller of the function has a longer deadline, then we should preempt it with the newly created task.
+			if (kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime > ((TCB*)svc_args[1])->remainingTime
+					&& kernelVariables.kernelStarted) {
+				SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+				__asm("isb");
+			}
+
+			return RTX_OK;
+		}
 
 		break;
 	case OS_PERIOD_YIELD:

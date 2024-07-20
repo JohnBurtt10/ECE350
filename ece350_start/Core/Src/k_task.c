@@ -19,6 +19,13 @@ int osCreateTask(TCB* task) {
 	return output;
 }
 
+int osCreateDeadlineTask(int deadline, TCB* task) {
+	int output;
+	TRIGGER_SVC(OS_CREATE_DEADLINE_TASK);
+	__asm("MOV %0, R0": "=r"(output));
+	return output;
+}
+
 void osYield(void) {
 	TRIGGER_SVC(OS_YIELD);
 }
@@ -28,7 +35,6 @@ int osKernelStart(void) {
 
 	TRIGGER_SVC(OS_KERNEL_START);
 	__asm("MOV %0, R0": "=r"(output));
-
 	/* If the kernel was successful started, call osYield to run the first task */
 	if (output == RTX_OK){
 		TRIGGER_SVC(OS_YIELD);
@@ -58,19 +64,6 @@ task_t osGetTID (void) {
 	__asm("MOV %0, R0": "=r"(tid));
 
 	return tid;
-}
-
-int osSetDeadline(int deadline, task_t TID) {
-	if (deadline <= 0 || TID <= 0 || TID >= MAX_TASKS) {
-		return RTX_ERR;
-	}
-
-	U32 output;
-
-	TRIGGER_SVC(OS_SET_DEADLINE);
-	__asm("MOV %0, R0": "=r"(output));
-
-	return output;
 }
 
 int osTaskExit(void){

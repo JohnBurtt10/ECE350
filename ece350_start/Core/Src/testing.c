@@ -50,99 +50,13 @@ int main(void)
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	osKernelInit();
-	k_mem_init();
+	TCB task = {.ptask = &Task_Yield, .stack_size = 0x200};
+	TCB task2 = {.ptask = &Task_Yield, .stack_size = 0x200};
+	osCreateDeadlineTask(4, &task);
+	osCreateDeadlineTask(11, &task2);
 
-//	TCB tasks[8];
-//
-//	for (int i = 0; i < 8; i++){
-//		tasks[i].stack_size = 0x800;
-//		if (i == 2) {
-//			tasks[i].ptask = (void*) &Task_Yield_Exit;
-//		} else if (i == 3){
-//			tasks[i].ptask = (void*) &Task_Create;
-//		}
-//		else {
-//			tasks[i].ptask = (void*) &Task_Yield;
-//		}
-//		int result = osCreateTask(&tasks[i]);
-//		if (!result)
-//			printf("osCreateTask failed\r\n");
-//	}
-//
-//	osKernelStart();
-
-//	Block* firstBlock = buddyHeap.blockList[0];
-
-//	DEBUG_PRINTF("Image end: %x\r\n", &_img_end);
-//	DEBUG_PRINTF("EStack: %x\r\n", &_estack);
-//	DEBUG_PRINTF("Min Stack Size: %x\r\n", &_Min_Stack_Size);
-	DEBUG_PRINTF("Start address: %x\r\n", kernelVariables.startOfHeap);
-	DEBUG_PRINTF("End address: %x\r\n", kernelVariables.endOfHeap);
-	DEBUG_PRINTF("Size of Heap: %d bytes\r\n", kernelVariables.endOfHeap - kernelVariables.startOfHeap);
-//	DEBUG_PRINTF("Size of KernelVariables: %d\r\n", sizeof(Kernel_Variables));
-//	DEBUG_PRINTF("Size of TCB: %d\r\n", sizeof(TCB));
-//	DEBUG_PRINTF("Size of Block: %d\r\n", sizeof(Block));
-//	DEBUG_PRINTF("Size of BuddyHeap: %d\r\n", sizeof(BuddyHeap));
-//	DEBUG_PRINTF("First Block Address: %x\r\n", firstBlock);
-//	DEBUG_PRINTF("First Block Type: %d\r\n", firstBlock->type);
-//	DEBUG_PRINTF("First Block Size: %d bytes \r\n", firstBlock->size);
-//	DEBUG_PRINTF("First Block TID of Owner: %d\r\n", firstBlock->TIDofOwner);
-//	DEBUG_PRINTF("First Block Next: %x\r\n", firstBlock->next);
-//	DEBUG_PRINTF("First Block Magic Num: %x\r\n", firstBlock->magicNum);
-    int block_size = 32;
-
-	int test = Calculate_Order(block_size);
-	DEBUG_PRINTF("Order of 32: %d\r\n", test);
-
-    int test_index = Calculate_Free_List_Idx(test);
-    DEBUG_PRINTF("Free list index of %d: %d\r\n", block_size, test_index);
-
-    void* malloc_ptr1 = k_mem_alloc(block_size);
-    void* malloc_ptr2 = k_mem_alloc(block_size);
-//    void* malloc_ptr3 = k_mem_alloc(62);
-//    void* malloc_ptr4 = k_mem_alloc(640000);
-//    void* malloc_ptr5 = k_mem_alloc(128);
-//    void* malloc_ptr6 = k_mem_alloc(2);
-
-    DEBUG_PRINTF("malloc_ptr1: %x, size: %d\r\n", malloc_ptr1, ((Block *)ACTUAL_BLOCK(malloc_ptr1))->size);
-    DEBUG_PRINTF("malloc_ptr2: %x, size: %d\r\n", malloc_ptr2, ((Block *)ACTUAL_BLOCK(malloc_ptr2))->size);
-//    DEBUG_PRINTF("malloc_ptr3: %x, size: %d\r\n", malloc_ptr3, ((Block *)ACTUAL_BLOCK(malloc_ptr3))->size);
-//    DEBUG_PRINTF("malloc_ptr5: %x, size: %d\r\n", malloc_ptr5, ((Block *)ACTUAL_BLOCK(malloc_ptr5))->size);
-//    DEBUG_PRINTF("malloc_ptr5: %x, size: %d\r\n", malloc_ptr6, ((Block *)ACTUAL_BLOCK(malloc_ptr6))->size);
-    DEBUG_PRINTF("Finished Mem_Alloc\r\n\n");
-
-    // buddyHeap.freeList[test_index];
-
-    k_mem_dealloc(malloc_ptr1);
-    DEBUG_PRINTF("\r\n");
-
-    Print_Free_List();
-    DEBUG_PRINTF("\r\n");
-
-    k_mem_dealloc(malloc_ptr2);
-    DEBUG_PRINTF("\r\n");
-
-    Print_Free_List();
-    DEBUG_PRINTF("\r\n");
-
-    osKernelStart();
-
-//    // Test the case when the pointer is NULL
-//    k_mem_dealloc(ptr);
-
-//    // Test the case where the pointer is a random address (does not point to a block)
-//    ptr = 0x20013000;
-//    k_mem_dealloc(ptr);
-
-//    ptr = malloc_ptr2;
-//    Block* temp = (Block *)(ptr);
-//    temp->size = 0x40;
-//    k_mem_dealloc(ptr);
-
-    //Block* test_block = Create_Block(32, , FREE, kernelVariables.currentRunningTID);
-
-    // Split_Block();
-	while (1)
+	osKernelStart();
+	while(1)
 	{
 		/* USER CODE END WHILE */
 		/* USER CODE BEGIN 3 */
@@ -180,8 +94,8 @@ void Task_Create(void) {
 }
 
 void Task_Yield(void){
-	printf("task-%d\r\n", osGetTID());
 	while (1) {
+		printf("task-%d\r\n", osGetTID());
 		osYield();
 	}
 
