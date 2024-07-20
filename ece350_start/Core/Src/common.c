@@ -44,6 +44,7 @@ int Scheduler(void) {
 __attribute__((always_inline))
 inline int EDFScheduler(void) {
 	int TIDTaskToRun = 0;
+	U8 isTIDFound = 0;
 	U32 shortestDeadline = kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime;
 
 	for (int i = 1; i < MAX_TASKS; i++) {
@@ -55,9 +56,11 @@ inline int EDFScheduler(void) {
 		}
 
 		if (currentTCB.state == READY) {
-			if (currentTCB.remainingTime <= shortestDeadline) {
+			if (currentTCB.remainingTime < shortestDeadline
+					|| ((currentTCB.remainingTime == shortestDeadline) && currentTCB.tid < TIDTaskToRun && isTIDFound == 1)) {
 				shortestDeadline = currentTCB.deadline_ms;
 				TIDTaskToRun = i;
+				isTIDFound = 1;
 			}
 		}
 	}

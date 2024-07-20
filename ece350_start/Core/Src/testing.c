@@ -98,8 +98,8 @@ void Task_Create(void) {
 void Task_Yield(void){
 	while (1) {
 		printf("task-%d\r\n", osGetTID());
-		osPeriodYield();
-//		osSleep(20);
+//		osPeriodYield();
+		osSleep(20);
 	}
 
 	return;
