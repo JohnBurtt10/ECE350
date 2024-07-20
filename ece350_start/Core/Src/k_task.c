@@ -83,16 +83,16 @@ int osSetDeadline(int deadline, task_t TID) {
 
 	int taskFound = 0;
 
-	if (!(deadline < 0) || TID == keneralVariables.currentRunningTID) {
+	if (!(deadline < 0) || TID == kernelVariables.currentRunningTID) {
 		DEBUG_PRINTF("  osSetDeadline received an invalid deadline or TID, returning RTX_ERROR\r\n");
 		return RTX_ERR;
 	}
 
 	for (int i = 0; i < MAX_TASKS; i++) {
-		if (TID == kernelVariables.tcbList[i].TID) {
+		if (TID == kernelVariables.tcbList[i].tid) {
 			DEBUG_PRINTF("  osSetDeadline found a TCB with the specified TID\r\n");
 			taskFound = 1;
-			kernelVariables.tcbList[i].deadline = deadline;
+			kernelVariables.tcbList[i].deadline_ms = deadline;
 			Scheduler();
 			break;
 		}

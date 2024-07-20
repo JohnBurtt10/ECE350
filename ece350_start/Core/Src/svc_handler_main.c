@@ -200,6 +200,8 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		}
 		else{
 			currentTCB2->state = SLEEPING;
+			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+			__asm("isb");
 			DEBUG_PRINTF("Period not elapsed\r\n");
 		}
 		
