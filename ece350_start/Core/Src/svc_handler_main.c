@@ -181,13 +181,16 @@ int SVC_Handler_Main( unsigned int *svc_args )
 			return RTX_ERR;
 		}
 		
-		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
+		TCB* currentTCB2 = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		// Verify that periodic task has completed the current instance
 		// Check if remaining period time is 0 (current time period elapses)
+
+		DEBUG_PRINTF("Task %d, remaining time: %d, deadline: %d, state: %d\r\n", kernelVariables.currentRunningTID, currentTCB2->remainingTime, currentTCB2->deadline_ms, currentTCB2->state);
 		if(currentTCB->remainingTime == 0){
 			currentTCB->remainingTime=currentTCB->deadline_ms;
 			// Set the sleeping state
 			currentTCB->state = SLEEPING;
+			DEBUG_PRINTF("Current time period elapses");
 		}
 
 		__enable_irq();
