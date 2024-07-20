@@ -43,6 +43,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
     		break;
     	}
 
+		// Reset task's time remaining back to its deadline
     	kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
 
     	// Save current task state.
@@ -195,15 +196,17 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		if(currentTCB2->remainingTime == 0){ // deadline 4, remaining time 2
 			// Task is only ready when the current period is completed
 			currentTCB2->state = READY;
+			// Reset task's time remaining back to its deadline
 			currentTCB2->remainingTime = currentTCB2->deadline_ms;
 			DEBUG_PRINTF("Current time period elapses, adding task to scheduler\r\n");
 		}
 		else{
 			currentTCB2->state = SLEEPING;
-			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
-			__asm("isb");
 			DEBUG_PRINTF("Period not elapsed\r\n");
 		}
+
+		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+			__asm("isb");
 		
 		break;
     default:    /* unknown SVC */
@@ -219,9 +222,6 @@ void contextSwitch(void) {
 		// Find next task to run
 		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		currentTCB->current_sp = __get_PSP();
-
-		// Reset task's time remaining back to its deadline
-		currentTCB->remainingTime = currentTCB->deadline_ms;
 
 		// Update current task to READY if yielding from task, if exiting, state remains dormant
 		if (currentTCB->state == RUNNING){
