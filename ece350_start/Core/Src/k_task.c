@@ -80,6 +80,32 @@ void osSleep(int timeInMs) {
 	TRIGGER_SVC(OS_YIELD);
 }
 
+int osSetDeadline(int deadline, task_t TID) {
+
+	int taskFound = 0;
+
+	if (!(deadline < 0) || TID == keneralVariables.currentRunningTID) {
+		DEBUG_PRINTF("  osSetDeadline received an invalid deadline or TID, returning RTX_ERROR\r\n");
+		return RTX_ERR;
+	}
+
+	for (int i = 0; i < MAX_TASKS; i++) {
+		if (TID == kernelVariables.tcbList[i].TID) {
+			DEBUG_PRINTF("  osSetDeadline found a TCB with the specified TID\r\n");
+			taskFound = 1;
+			kernelVariables.tcbList[i].deadline = deadline;
+			Scheduler();
+			break;
+		}
+	}
+
+	return (RTX_OK ? taskFound: RTX_ERR);
+
+	// iterate through tasks until the one with TID equal to TID is found
+	// call scheduler
+
+}
+
 void Null_Task_Function(void) {
 	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
 

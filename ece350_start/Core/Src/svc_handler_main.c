@@ -135,6 +135,8 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
 		kernelVariables.tcbList[TID].deadline_ms = deadline;
 
+		return osSetDeadline(deadline, TID);
+
 		/*
 		 * After updating deadline, run EDF Scheduler
 		 * If the current running TID differs from scheduler, pre-empt current running task.
