@@ -183,9 +183,6 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
 		break;
 	case OS_PERIOD_YIELD:
-		// Disable all interrupts
-		__disable_irq();
-
 		// Check that kernel has started and a task has started
 		if(kernelVariables.currentRunningTID == -1){
 			return RTX_ERR;
@@ -194,16 +191,15 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		TCB* currentTCB2 = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		// Verify that periodic task has completed the current instance
 		// Check if remaining period time is 0 (current time period elapses)
-
 		DEBUG_PRINTF("Task %d, remaining time: %d, deadline: %d, state: %d\r\n", kernelVariables.currentRunningTID, currentTCB2->remainingTime, currentTCB2->deadline_ms, currentTCB2->state);
-		if(currentTCB->remainingTime == 0){
-			currentTCB->remainingTime=currentTCB->deadline_ms;
-			// Set the sleeping state
-			currentTCB->state = SLEEPING;
+		if(currentTCB2->remainingTime == 0){ // deadline 4, remaining time 2
+			// Task is only ready when the current period is completed
+			currentTCB2->state = READY;
 			DEBUG_PRINTF("Current time period elapses");
 		}
-
-		__enable_irq();
+		else{
+			currentTCB2->state -> SLEEP;
+		}
 		
 		break;
     default:    /* unknown SVC */
