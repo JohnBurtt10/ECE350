@@ -79,8 +79,8 @@ void Null_Task_Function(void);
  */
 task_t osGetTID(void);
 
-int osSetDeadline(int deadline, task_t TID);
-
 void osSleep(int timeInMs);
+
+int osCreateDeadlineTask(int deadline, TCB* task);
 
 #endif /* INC_K_TASK_H_ */

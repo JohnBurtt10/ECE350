@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
+#include <main.h>
 
 // ------- Globals --------
 Kernel_Variables kernelVariables = {.currentRunningTID  = -1,
@@ -54,6 +55,8 @@ void osInitTCBArray(void) {
 	kernelVariables.tcbList[0].state = READY;
 	kernelVariables.tcbList[0].stack_size = NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].current_sp = kernelVariables.tcbList[0].stack_high;
+	kernelVariables.tcbList[0].deadline_ms = 4294967295;
+	kernelVariables.tcbList[0].remainingTime = 4294967295;
 
 	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].current_sp, kernelVariables.tcbList[0].ptask, 0);
 
@@ -65,6 +68,8 @@ void osInitTCBArray(void) {
 		kernelVariables.tcbList[i].state = CREATED;
 		kernelVariables.tcbList[i].stack_size = 0;
 		kernelVariables.tcbList[i].current_sp = 0x0;
+		kernelVariables.tcbList[0].deadline_ms = 5;
+		kernelVariables.tcbList[0].remainingTime = 5;
 	}
 
 	return;
@@ -98,17 +103,9 @@ int k_mem_count_extfrag(size_t size) {
 void osInitBuddyHeap(void) {
 	buddyHeap.currentBlockListSize = 0;
 
-//	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-//		buddyHeap.blockList[i] = NULL;
-//	}
-
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
 		buddyHeap.freeList[i] = NULL;
 	}
-
-//	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-//		buddyHeap.bitArray[i] = 0;
-//	}
 
 	Block* initial_block = Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
 	Free_List_Push(initial_block, 0);
@@ -171,7 +168,6 @@ void* k_mem_alloc(size_t size)
 		currIndex--;
 	}
 	DEBUG_PRINTF("Smallest free block order: %d, index: %d, smallest free block index: %d\r\n", required_order, required_idx, currIndex);
-
 	return NULL;
 }
 
@@ -264,7 +260,6 @@ int k_mem_dealloc(void* ptr) {
 			break;
 		}
 	}
-
 	return RTX_OK;
 }
 
