@@ -195,10 +195,12 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		if(currentTCB2->remainingTime == 0){ // deadline 4, remaining time 2
 			// Task is only ready when the current period is completed
 			currentTCB2->state = READY;
-			DEBUG_PRINTF("Current time period elapses");
+			currentTCB2->remainingTime = currentTCB2->deadline_ms;
+			DEBUG_PRINTF("Current time period elapses, adding task to scheduler\r\n");
 		}
 		else{
-			currentTCB2->state -> SLEEP;
+			currentTCB2->state = SLEEPING;
+			DEBUG_PRINTF("Period not elapsed\r\n");
 		}
 		
 		break;
