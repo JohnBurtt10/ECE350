@@ -129,13 +129,17 @@ int SVC_Handler_Main( unsigned int *svc_args )
 	case OS_SET_DEADLINE:
 		int deadline = (int) svc_args[0];
 		TID = (task_t) svc_args[1];
+
+		if (!(deadline < 0) || TID == &kernelVariables.tcbList[kernelVariables.currentRunningTID]) {
+		DEBUG_PRINTF("  osSetDeadline received an invalid deadline or TID, returning RTX_ERROR\r\n");
+		return RTX_ERR;
+		}
+
 		if (kernelVariables.tcbList[TID].state != READY) {
 			return RTX_ERR;
 		}
 
 		kernelVariables.tcbList[TID].deadline_ms = deadline;
-
-		return osSetDeadline(deadline, TID);
 
 		/*
 		 * After updating deadline, run EDF Scheduler
