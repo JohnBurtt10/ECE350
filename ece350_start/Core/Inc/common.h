@@ -89,7 +89,7 @@ typedef struct task_control_block{
 	U8 state; //task's state
 	U16 stack_size; //stack size. Must be a multiple of 8
 	U32 current_sp; // top of stack
-	U32 remainingTime;
+	int32_t remainingTime;
 	U32 deadline_ms;
 } TCB;
 

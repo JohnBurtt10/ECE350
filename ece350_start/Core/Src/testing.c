@@ -39,6 +39,7 @@ int main(void)
 {
 	/* MCU Configuration: Don't change this or the whole chip won't work!*/
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+
 	HAL_Init();
 	/* Configure the system clock */
 	SystemClock_Config();
@@ -97,7 +98,8 @@ void Task_Create(void) {
 void Task_Yield(void){
 	while (1) {
 		printf("task-%d\r\n", osGetTID());
-		osSleep(20);
+		osPeriodYield();
+//		osSleep(20);
 	}
 
 	return;
