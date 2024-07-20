@@ -135,6 +135,8 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
 		kernelVariables.tcbList[TID].deadline_ms = deadline;
 
+		return osSetDeadline(deadline, TID);
+
 		/*
 		 * After updating deadline, run EDF Scheduler
 		 * If the current running TID differs from scheduler, pre-empt current running task.
@@ -148,6 +150,10 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		currentTCB->state = SLEEPING;
 		currentTCB->remainingTime = timeInMs;
+
+		// Save current task state.
+		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+		__asm("isb");
 
 		break;
 	case OS_CREATE_DEADLINE_TASK:
