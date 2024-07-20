@@ -220,9 +220,6 @@ void contextSwitch(void) {
 		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		currentTCB->current_sp = __get_PSP();
 
-		// Reset task's time remaining back to its deadline
-		currentTCB->remainingTime = currentTCB->deadline_ms;
-
 		// Update current task to READY if yielding from task, if exiting, state remains dormant
 		if (currentTCB->state == RUNNING){
 			currentTCB->state = READY;

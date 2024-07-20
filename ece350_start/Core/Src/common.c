@@ -55,7 +55,7 @@ inline int EDFScheduler(void) {
 		}
 
 		if (currentTCB.state == READY) {
-			if (currentTCB.remainingTime < shortestDeadline || (currentTCB.remainingTime == shortestDeadline && currentTCB.tid < TIDTaskToRun)) {
+			if (currentTCB.remainingTime <= shortestDeadline) {
 				shortestDeadline = currentTCB.deadline_ms;
 				TIDTaskToRun = i;
 			}

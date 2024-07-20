@@ -52,9 +52,9 @@ int main(void)
 	/* USER CODE BEGIN WHILE */
 	osKernelInit();
 	TCB task = {.ptask = &Task_Yield, .stack_size = 0x200};
-//	TCB task2 = {.ptask = &Hello_World, .stack_size = 0x200};
+	TCB task2 = {.ptask = &Task_Yield, .stack_size = 0x200};
 	osCreateDeadlineTask(4, &task);
-//	osCreateDeadlineTask(11, &task2);
+	osCreateDeadlineTask(11, &task2);
 
 	osKernelStart();
 	while(1)
@@ -97,8 +97,7 @@ void Task_Create(void) {
 void Task_Yield(void){
 	while (1) {
 		printf("task-%d\r\n", osGetTID());
-		osPeriodYield();
-		// osSleep(1000);
+		osSleep(20);
 	}
 
 	return;

@@ -68,8 +68,8 @@ void osInitTCBArray(void) {
 		kernelVariables.tcbList[i].state = CREATED;
 		kernelVariables.tcbList[i].stack_size = 0;
 		kernelVariables.tcbList[i].current_sp = 0x0;
-		kernelVariables.tcbList[0].deadline_ms = 5;
-		kernelVariables.tcbList[0].remainingTime = 5;
+		kernelVariables.tcbList[i].deadline_ms = 5;
+		kernelVariables.tcbList[i].remainingTime = 5;
 	}
 
 	return;
