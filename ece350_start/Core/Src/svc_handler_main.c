@@ -43,10 +43,6 @@ int SVC_Handler_Main( unsigned int *svc_args )
     		break;
     	}
 
-		// Reset task's time remaining back to its deadline
-		// TODO: maybe can move into contextSwitch() function
-		kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
-
     	// Save current task state.
     	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
     	__asm("isb");
@@ -155,18 +151,24 @@ int SVC_Handler_Main( unsigned int *svc_args )
 
 		break;
 	case OS_PERIOD_YIELD:
+		// Disable all interrupts
+		__disable_irq();
+
+		// Check that kernel has started and a task has started
+		if(kernelVariables.currentRunningTID == -1){
+			return RTX_ERR;
+		}
+		
 		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		// Verify that periodic task has completed the current instance
 		// Check if remaining period time is 0 (current time period elapses)
 		if(currentTCB->remainingTime == 0){
-			// Call EDF Scheduler on task if period is finished and CPU is available
-			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler to call scheduler and context switch
-    		__asm("isb");
-
-			// Reset remaining time to the deadline at the end of the period
-			kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime = kernelVariables.tcbList[kernelVariables.currentRunningTID].deadline_ms;
-
+			currentTCB->remainingTime=currentTCB->deadline_ms;
+			// Set the sleeping state
+			currentTCB->state = SLEEPING;
 		}
+
+		__enable_irq();
 		
 		break;
     default:    /* unknown SVC */
@@ -183,6 +185,7 @@ void contextSwitch(void) {
 		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		currentTCB->current_sp = __get_PSP();
 
+		// Reset task's time remaining back to its deadline
 		currentTCB->remainingTime = currentTCB->deadline_ms;
 
 		// Update current task to READY if yielding from task, if exiting, state remains dormant
