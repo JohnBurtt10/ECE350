@@ -81,8 +81,6 @@ task_t osGetTID(void);
 
 void osSleep(int timeInMs);
 
-void osSetDeadline(int deadline, task_t TID);
-
 int osCreateDeadlineTask(int deadline, TCB* task);
 
 /**

@@ -30,9 +30,6 @@ void Task_Yield(void);
 void Hello_World(void);
 void Task_Create(void);
 
-void Task1_Function(void);
-void Task2_Function(void);
-
 void Print_Free_List();
 
 TCB task;
@@ -55,8 +52,8 @@ int main(void)
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	osKernelInit();
-	TCB task = {.ptask = &Task2_Function, .stack_size = 0x200};
-	TCB task2 = {.ptask = &Task1_Function, .stack_size = 0x200};
+	TCB task = {.ptask = &Task_Yield, .stack_size = 0x200};
+	TCB task2 = {.ptask = &Task_Yield, .stack_size = 0x200};
 	osCreateDeadlineTask(4, &task);
 	osCreateDeadlineTask(11, &task2);
 
@@ -98,21 +95,12 @@ void Task_Create(void) {
 	osYield();
 }
 
-void Task1_Function(void){
-	Task_Yield();
-	return;
-}
-
-void Task2_Function(void){
-	osSetDeadline(5, 1);
-	Task_Yield();
-	return;
-}
-
 void Task_Yield(void){
+	while (1) {
 		printf("task-%d\r\n", osGetTID());
 //		osPeriodYield();
-		osYield();
+		osSleep(20);
+	}
 
 	return;
 }
