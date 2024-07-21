@@ -88,4 +88,6 @@ int osCreateDeadlineTask(int deadline, TCB* task);
  */
 void osPeriodYield();
 
+void osSetDeadline(int deadline, task_t TID);
+
 #endif /* INC_K_TASK_H_ */
