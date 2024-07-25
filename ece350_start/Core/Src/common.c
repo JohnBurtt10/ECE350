@@ -45,7 +45,7 @@ __attribute__((always_inline))
 inline int EDFScheduler(void) {
 	int TIDTaskToRun = 0;
 	U8 isTIDFound = 0;
-	U32 shortestDeadline = kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime;
+	U32 shortestDeadline = kernelVariables.tcbList[0].remainingTime;
 
 	for (int i = 1; i < MAX_TASKS; i++) {
 		TCB currentTCB = kernelVariables.tcbList[i];

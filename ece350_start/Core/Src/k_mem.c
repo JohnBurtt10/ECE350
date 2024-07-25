@@ -55,8 +55,8 @@ void osInitTCBArray(void) {
 	kernelVariables.tcbList[0].state = READY;
 	kernelVariables.tcbList[0].stack_size = NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].current_sp = kernelVariables.tcbList[0].stack_high;
-	kernelVariables.tcbList[0].deadline_ms = 4294967295;
-	kernelVariables.tcbList[0].remainingTime = 4294967295;
+	kernelVariables.tcbList[0].deadline_ms = MAX_SIGNED_INT_VALUE;
+	kernelVariables.tcbList[0].remainingTime = MAX_SIGNED_INT_VALUE;
 
 	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].current_sp, kernelVariables.tcbList[0].ptask, 0);
 
