@@ -10,24 +10,43 @@
 //*/
 //
 ///* ------------------------------------------------------------------------------------------------
+// * Includes
+// * --------------------------------------------------------------------------------------------- */
+//
+////These are your headers
+//#include "common.h"
+//#include "k_mem.h"
+//#include "k_task.h"
+//
+////These are headers that the autograder needs
+//#include <assert.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <stdint.h>
+//#include <stdbool.h>
+//#include <stddef.h>
+//#include <string.h>
+//#include "main.h"
+//
+///* ------------------------------------------------------------------------------------------------
 // * Constants/Defines
 // * --------------------------------------------------------------------------------------------- */
 //
 ////Change this to the lab you want to test for
 ////#define LAB_NUMBER 1
-//#define LAB_NUMBER 2
+//#define LAB_NUMBER 1
 ////#define LAB_NUMBER 3
 //
-//#define NUM_TEST_FUNCTIONS 16
+//#define NUM_TEST_FUNCTIONS 20
 //
 ////X macros are magical! :)
 ////Order: function name, stack size, minimum lab number required, description string, author string
 //#define TEST_FUNCTIONS \
 //    X(sanity,                       STACK_SIZE, 1,  "Basic sanity test",                                            "JZJ") \
 //    X(eternalprintf,                STACK_SIZE, 1,  "Group 13's first testcase. No idea why that's the name...",    "JZJ") \
-//    X(lab2allocsanity,              STACK_SIZE, 2,  "Allocates some memory!",                                       "JZJ") \
-//    X(lab2deallocsanity,            STACK_SIZE, 2,  "Deallocates lab2allocsanity's memory!",                        "JZJ") \
+//    X(lab2sanity,                   STACK_SIZE, 2,  "Allocates and deallocates some memory!",                       "JZJ") \
 //    X(free_me_from_my_pain,         STACK_SIZE, 2,  "Attempts to free you from existence with DEADLY pointers!",    "JZJ") \
+//    X(extfrag,                      STACK_SIZE, 2,  "Tests k_mem_count_extfrag()",                                  "JZJ") \
 //    X(reject_bad_tcbs,              STACK_SIZE, 1,  "You shouldn't create tasks from bad TCBs, it's not healthy!",  "JZJ") \
 //    X(stack_reuse,                  STACK_SIZE, 1,  "Basic stack reuse test",                                       "JZJ") \
 //    X(square_batman,                STACK_SIZE, 1,  "Round robin test",                                             "JZJ") \
@@ -37,9 +56,12 @@
 //    X(tid_limits,                   STACK_SIZE, 1,  "Maximum number of TIDs test",                                  "JZJ") \
 //    X(tid_uniqueness,               STACK_SIZE, 1,  "Ensure the same TID isn't used for two tasks",                 "JZJ") \
 //    X(reincarnation,                STACK_SIZE, 1,  "A task whose last act is to recreate itself",                  "JZJ") \
+//    X(mem_ownership,                STACK_SIZE, 2,  "Ensures you can't free memory you don't own",                  "JZJ") \
 //    X(insanity,                     0x400,      1,  "This is a tough one, but you can do it!",                      "JZJ") \
-//    X(greedy,                       STACK_SIZE, 1,  "Stack exaustion test. This test should come last.",            "JZJ")
-////X(kachow,                       STACK_SIZE, 2,  "Gotta go fast! Wait no that's a different franchise.",         "JZJ") \
+//    X(insanity2,                    0x400,      2,  "Your heap will weep!",                                         "JZJ") \
+//    X(kachow,                       0x400,      2,  "Gotta go fast! Wait no that's a different franchise.",         "JZJ") \
+//    X(greedy,                       STACK_SIZE, 1,  "Stack exaustion test. This test should come near last.",       "JZJ") \
+//    X(big_alloc,                    0x800,      2,  "Allocate and deallocate almost 32KiB of memory a few ways!",   "JZJ")
 ////TODO comprehensive extfrag test
 ////TODO stress test for alloc and dealloc
 ////TODO We can always use more testcases!
@@ -49,7 +71,10 @@
 //
 //#define NUM_PRIVILEGED_TESTS 21
 //
-//#define KACHOW_ITERATIONS 1000000
+////The largest block header size we'd ever expect for a group's code
+//#define MAX_BLOCK_HEADER_SIZE 16
+//
+//#define KACHOW_ITERATIONS 10000
 //
 //#define NUM_SIDEKICKS   5
 //#define EVIL_ROBIN      NUM_SIDEKICKS / 2
@@ -93,23 +118,16 @@
 //    osTaskExit(); \
 //} while (0)
 //
-///* ------------------------------------------------------------------------------------------------
-// * Includes
-// * --------------------------------------------------------------------------------------------- */
-//
-////These are your headers
-//#include "common.h"
-//#include "k_mem.h"
-//#include "k_task.h"
-//
-////These are headers that the autograder needs
-//#include <assert.h>
-//#include <stdio.h>
-//#include <stdint.h>
-//#include <stdbool.h>
-//#include <stddef.h>
-//#include <string.h>
-//#include "main.h"
+////Based off of one of the provided testcases
+//#define ARM_CM_DEMCR      (*(volatile uint32_t*)0xE000EDFC)
+//#define ARM_CM_DWT_CTRL   (*(volatile uint32_t*)0xE0001000)
+//#define ARM_CM_DWT_CYCCNT (*(volatile uint32_t*)0xE0001004)
+//#define RESET_CYCLE_COUNT() do { \
+//    ARM_CM_DEMCR      |= 1 << 24; \
+//    ARM_CM_DWT_CYCCNT  = 0; \
+//    ARM_CM_DWT_CTRL   |= 1 << 0; \
+//} while (0)
+//#define GET_CYCLE_COUNT() (ARM_CM_DWT_CYCCNT)
 //
 ///* ------------------------------------------------------------------------------------------------
 // * Type Declarations
@@ -139,6 +157,7 @@
 //
 //static void square_batman_helper(void*);
 //static void test4ispain_helper(void*);
+//static void mem_ownership_helper(void*);
 //static void insanity_helper(void*);
 //
 ////Too bad these couldn't be part of insanity
@@ -192,7 +211,7 @@
 //static volatile int         square_batman_counters[NUM_SIDEKICKS] = {0, 0, 0, 0, 0};
 //static volatile int         test4pain_counters[NUM_SIDEKICKS] = {0, 0, 0};
 //static volatile size_t      insanity_counter = 0;
-//static volatile uint32_t*   lab2sanity = NULL;
+//static volatile void*       mem_ownership_ptr = NULL;
 //
 ///* ------------------------------------------------------------------------------------------------
 // * Function Implementations
@@ -481,17 +500,18 @@
 //    }
 //
 //    //Privileged test #19
-//#if LAB_NUMBER >= 2
-//    if (k_mem_init() != RTX_OK) {//FIXME what about testing if k_mem_init() works if called from a user task?
-//        rprintf("    k_mem_init() failed!");
-//    } else {
-//        gprintf("    k_mem_init() was successful!");
-//        ++num_passed;
-//    }
-//#else
-//    bprintf("    Skipping k_mem_init() test since it's not required for Lab 1...");
-//    ++num_skipped;
-//#endif
+//	#if LAB_NUMBER >= 2
+//		if (k_mem_init() != RTX_OK) {//FIXME what about testing if k_mem_init() works if called from a user task?
+//			rprintf("    k_mem_init() failed!");
+//		} else {
+//			gprintf("    k_mem_init() was successful!");
+//			++num_passed;
+//		}
+//	#else
+//		bprintf("    Skipping k_mem_init() test since it's not required for Lab 1...");
+//		++num_skipped;
+//	#endif
+//
 //
 //    //Privileged test #20
 //#if LAB_NUMBER >= 2
@@ -511,7 +531,7 @@
 //    if (k_mem_count_extfrag(100000) != 1) {
 //        rprintf("    k_mem_count_extfrag() should be 1 right after k_mem_init()!");
 //    } else {
-//        gprintf("    k_mem_count_extfrag() is behaving as expected before k_mem_init()!");
+//        gprintf("    k_mem_count_extfrag() is behaving as expected after k_mem_init()!");
 //        ++num_passed;
 //    }
 //#else
@@ -746,6 +766,65 @@
 //    treturn(true);
 //}
 //
+//static void lab2sanity(void*) {
+//    volatile uint32_t* ptr = k_mem_alloc(sizeof(uint32_t));
+//    if (ptr == NULL) {
+//        tprintf("k_mem_alloc() failed to allocate memory!");
+//        treturn(false);
+//    }
+//    tprintf("Successfully allocated a pointer at 0x%lX", (uint32_t)ptr);
+//
+//    *ptr = 0x12345678;
+//    uint32_t read_data = *ptr;
+//    if (read_data != 0x12345678) {
+//        tprintf("Failed to read back the data we wrote (likely this is a bad pointer to some IO memory)!");
+//        treturn(false);
+//    }
+//    tprintf("I successfully wrote and read the value 0x%lX!", read_data);
+//
+//    if (k_mem_dealloc((void*)ptr) != RTX_OK) {
+//        tprintf("k_mem_dealloc() failed to deallocate memory!");
+//        treturn(false);
+//    }
+//    ptr = NULL;
+//
+//    treturn(true);
+//}
+//
+//static void big_alloc(void*) {
+//    size_t current_size = 32768;
+//
+//    //There is literally not enough stack to hold more pointers than this!
+//    void* allocations[256];
+//
+//    for (size_t ii = 0; ii < 9; ++ii) {
+//        size_t num_allocs = 1 << ii;
+//
+//        tprintf("Filling up the heap with %u blocks that are %u bytes each...", num_allocs, current_size);
+//        for (size_t jj = 0; jj < num_allocs; ++jj) {
+//            allocations[jj] = k_mem_alloc(current_size - MAX_BLOCK_HEADER_SIZE);
+//            if (allocations[jj] == NULL) {
+//                tprintf("k_mem_alloc() failed to allocate a %u byte block!", current_size);
+//                treturn(false);
+//            }
+//            memset(allocations[jj], 0xC3, current_size - MAX_BLOCK_HEADER_SIZE);
+//        }
+//
+//        tprintf("Cleaning up...");
+//        for (size_t jj = 0; jj < num_allocs; ++jj) {
+//            if (k_mem_dealloc(allocations[jj]) != RTX_OK) {
+//                tprintf("k_mem_dealloc() failed to deallocate a %u byte block!", current_size);
+//                treturn(false);
+//            }
+//        }
+//
+//        current_size >>= 1;
+//    }
+//
+//    tprintf("You made it!");
+//    treturn(true);
+//}
+//
 //static void free_me_from_my_pain(void*) {
 //    if (k_mem_dealloc(NULL) != RTX_ERR) {
 //        tprintf("k_mem_dealloc() should return RTX_ERR when deallocating a NULL pointer!");
@@ -762,36 +841,98 @@
 //    treturn(true);
 //}
 //
+//static void extfrag(void*) {
+//    //Heap starts with one big block
+//    if (k_mem_count_extfrag(33) != 0) {
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(16385) != 0) {
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(100000) != 1) {
+//        treturn(false);
+//    }
+//
+//    void* ptr = k_mem_alloc(1);
+//    if (k_mem_count_extfrag(33) != 1) {//We should have a 32-byte buddy!
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(16385) != 10) {//Each level also should have gotten a buddy
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(100000) != 10) {//The root should no longer be free
+//        treturn(false);
+//    }
+//
+//    void* ptr2 = k_mem_alloc(1);
+//    if (k_mem_count_extfrag(33) != 0) {//We should have no 32-byte buddies!
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(16385) != 9) {
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(100000) != 9) {
+//        treturn(false);
+//    }
+//
+//    k_mem_dealloc(ptr);
+//    if (k_mem_count_extfrag(33) != 1) {
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(16385) != 10) {
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(100000) != 10) {
+//        treturn(false);
+//    }
+//
+//    k_mem_dealloc(ptr2);
+//    if (k_mem_count_extfrag(33) != 0) {
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(16385) != 0) {
+//        treturn(false);
+//    }
+//    if (k_mem_count_extfrag(100000) != 1) {
+//        treturn(false);
+//    }
+//
+//    treturn(true);
+//}
+//
 //static void kachow(void*) {
 //    //Volatile is useful for inhibiting optimizations for benchmarking
-//    //FIXME why do the HAL_GetTick numbers not make sense?
-//    /*
 //
-//    uint64_t rand_start_time = HAL_GetTick();
+//    srand(1);//For consistency
+//    uint32_t overhead_total_cycles = 0;
 //    for (int ii = 0; ii < KACHOW_ITERATIONS; ++ii) {
-//        volatile uint32_t size1 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size2 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size3 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size4 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size5 = (uint32_t)(rand() % 4096);
+//        RESET_CYCLE_COUNT();
+//        uint32_t overhead_start_cycles = GET_CYCLE_COUNT();
+//
+//        volatile uint32_t value1 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t value2 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t value3 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t value4 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t value5 = (uint32_t)(rand() % 1024) + 1;
+//
+//        uint32_t overhead_end_cycles = GET_CYCLE_COUNT();
+//        overhead_total_cycles += overhead_end_cycles - overhead_start_cycles;
 //    }
-//    uint64_t rand_end_time = HAL_GetTick();
-//    uint64_t total_rand_time = rand_end_time - rand_start_time;
-//    tprintf("rand_start_time: %lu", rand_start_time);
-//    tprintf("rand_end_time: %lu", rand_end_time);
-//    tprintf("rand() takes %lums to generate a random number < 4096", total_rand_time);
-//    uint64_t average_rand_time = (total_rand_time * 1000000) / (KACHOW_ITERATIONS * 5);
-//    tprintf("rand() takes an average of %luns to generate a random number < 4096", average_rand_time);
+//    tprintf("Loop overhead and unrelated calculations take %lu cycles on average", overhead_total_cycles / KACHOW_ITERATIONS);
 //    tprintf("This will be used to adjust future calculations");
 //
-//    uint64_t reference_start_time = HAL_GetTick();
+//    srand(1);//For consistency
+//    uint32_t reference_total_cycles = 0;
 //    for (int ii = 0; ii < KACHOW_ITERATIONS; ++ii) {
+//        RESET_CYCLE_COUNT();
+//        uint32_t reference_start_cycles = GET_CYCLE_COUNT();
+//
 //        //Some fancy pattern of mallocs and frees
-//        volatile uint32_t size1 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size2 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size3 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size4 = (uint32_t)(rand() % 4096);
-//        volatile uint32_t size5 = (uint32_t)(rand() % 4096);
+//        volatile uint32_t size1 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size2 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size3 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size4 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size5 = (uint32_t)(rand() % 1024) + 1;
 //        volatile int* ptr1 = malloc(size1);
 //        volatile int* ptr2 = malloc(size2);
 //        *ptr1 = 1;
@@ -804,74 +945,212 @@
 //        free(ptr2);
 //        free(ptr4);
 //        volatile int* ptr5 = malloc(size5);
-//        *ptr5 = 3;
+//        *ptr5 = 5;
 //        free(ptr5);
 //        free(ptr3);
-//    }
-//    uint64_t total_reference_time = HAL_GetTick() - reference_start_time;
-//    tprintf("System malloc/free takes %lums to allocate and deallocate < 4096 bytes", total_reference_time);
-//    uint64_t average_reference_time = (total_reference_time * 1000000) / (KACHOW_ITERATIONS * 5);
-//    tprintf("System malloc/free takes an average of %luns to allocate and deallocate < 4096 bytes", average_reference_time);
-//    */
 //
-//    /*
-//    uint32_t your_start_time = HAL_GetTick();
+//        uint32_t reference_end_cycles = GET_CYCLE_COUNT();
+//        reference_total_cycles += reference_end_cycles - reference_start_cycles;
+//    }
+//    reference_total_cycles -= overhead_total_cycles;
+//    uint32_t average_reference_malloc_time = reference_total_cycles / (KACHOW_ITERATIONS * 5);
+//    tprintf("System malloc/free takes %lu cycles to allocate and deallocate on average", average_reference_malloc_time);
+//
+//    srand(1);//For consistency
+//    uint32_t your_total_cycles = 0;
 //    for (int ii = 0; ii < KACHOW_ITERATIONS; ++ii) {
+//        RESET_CYCLE_COUNT();
+//        uint32_t your_start_cycles = GET_CYCLE_COUNT();
+//
 //        //Same pattern
-//        void* ptr1 = k_mem_alloc(rand() % 4096);
-//        void* ptr2 = k_mem_alloc(rand() % 4096);
+//        volatile uint32_t size1 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size2 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size3 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size4 = (uint32_t)(rand() % 1024) + 1;
+//        volatile uint32_t size5 = (uint32_t)(rand() % 1024) + 1;
+//        volatile int* ptr1 = k_mem_alloc(size1);
+//        volatile int* ptr2 = k_mem_alloc(size2);
+//        *ptr1 = 1;
+//        *ptr2 = 2;
 //        k_mem_dealloc(ptr1);
-//        void* ptr3 = k_mem_alloc(rand() % 4096);
-//        void* ptr4 = k_mem_alloc(rand() % 4096);
+//        volatile int* ptr3 = k_mem_alloc(size3);
+//        volatile int* ptr4 = k_mem_alloc(size4);
+//        *ptr3 = 3;
+//        *ptr4 = 4;
 //        k_mem_dealloc(ptr2);
 //        k_mem_dealloc(ptr4);
-//        void* ptr5 = k_mem_alloc(rand() % 4096);
+//        volatile int* ptr5 = k_mem_alloc(size5);
+//        *ptr5 = 5;
 //        k_mem_dealloc(ptr5);
 //        k_mem_dealloc(ptr3);
-//    }
-//    uint32_t your_total_time = HAL_GetTick() - your_start_time;
-//    uint32_t your_average_time = (your_total_time * 1000000) / (KACHOW_ITERATIONS * 5);
-//    tprintf("k_mem_{de}alloc takes an average of %luns to allocate and deallocate < 4096 bytes", your_average_time);
 //
-//    tprintf("You passed if you're at least half as fast as the system malloc/free!");
-//    treturn(your_average_time <= (average_reference_malloc_time * 2));
-//    */
-//    treturn(true);
+//        uint32_t your_end_cycles = GET_CYCLE_COUNT();
+//        your_total_cycles += your_end_cycles - your_start_cycles;
+//    }
+//    your_total_cycles -= overhead_total_cycles;
+//    uint32_t your_average_time = your_total_cycles / (KACHOW_ITERATIONS * 5);
+//    tprintf("Your malloc/free takes %lu cycles to allocate and deallocate on average", your_average_time);
+//
+//    tprintf("You passed if you're at least a quarter as fast as the system malloc/free!");
+//    treturn(your_average_time <= (average_reference_malloc_time * 4));
 //}
 //
-//static void lab2allocsanity(void*) {
-//    lab2sanity = k_mem_alloc(sizeof(uint32_t));
-//    if (lab2sanity == NULL) {
-//        tprintf("k_mem_alloc() failed to allocate memory!");
-//        treturn(false);
+//static void insanity2(void*) {
+//    size_t      sizes[INSANITY_LEVEL];
+//    uint8_t*    allocations[INSANITY_LEVEL];
+//
+//    srand(1);//For consistency
+//
+//    //Only allocating then only deallocating, same orders for both
+//    tprintf("In-order alloc and dealloc...");
+//    for (size_t ii = 0; ii < INSANITY_LEVEL; ++ii) {
+//        bool no_problems = true;
+//        size_t num_allocs       = (((size_t)rand()) % (ii + 2)) + 1;
+//        size_t max_alloc_size   = 32768 / (num_allocs + 1);
+//
+//        for (size_t jj = 0; jj < num_allocs; ++jj) {
+//            sizes[jj] = ((size_t)rand()) % max_alloc_size;
+//            allocations[jj] = k_mem_alloc(sizes[jj]);
+//            if (allocations[jj] == NULL) {
+//                tprintf("k_mem_alloc() failed to allocate memory!");
+//                num_allocs = jj;
+//                no_problems = false;//Still try to clean up
+//                break;
+//            }
+//            //Fill the memory with a known pattern
+//            memset(allocations[jj], 0xA5, sizes[jj]);
+//        }
+//
+//        for (size_t jj = 0; jj < num_allocs; ++jj) {
+//            for (size_t kk = 0; kk < sizes[jj]; ++kk) {
+//                if (allocations[jj][kk] != 0xA5) {
+//                    tprintf("Memory corruption detected!");
+//                    no_problems = false;//Still try to clean up
+//                    break;
+//                }
+//            }
+//
+//            if (k_mem_dealloc(allocations[jj]) != RTX_OK) {
+//                tprintf("k_mem_dealloc() failed to deallocate memory!");
+//                //Failure to dealloc is catastrophic, there's no way to clean up!
+//                treturn(false);
+//            }
+//        }
+//
+//        if (!no_problems) {
+//            treturn(false);
+//        }
 //    }
-//    tprintf("Successfully allocated a pointer at 0x%lX", (uint32_t)lab2sanity);
 //
-//    *lab2sanity = 0x12345678;
-//    uint32_t read_data = *lab2sanity;
-//    if (read_data != 0x12345678) {
-//        tprintf("Failed to read back the data we wrote (likely this is a bad pointer to some IO memory)!");
-//        treturn(false);
-//    }
-//    tprintf("I successfully wrote and read the value 0x%lX!", read_data);
-//
-//    treturn(true);
-//}
-//
-//static void lab2deallocsanity(void*) {
-//    assert(lab2sanity && "lab2allocsanity() must be run before this test!");
-//    if (*lab2sanity != 0x12345678) {
-//        tprintf("The data we wrote earlier was corrupted!");
-//        treturn(false);
+//    //Only allocating, then only deallocating but Out of Order
+//    tprintf("In-order alloc, OoO dealloc...");
+//    bool no_problems = true;
+//    memset(allocations, 0, sizeof(uint8_t*) * INSANITY_LEVEL);
+//    for (size_t ii = 0; ii < INSANITY_LEVEL; ++ii) {
+//        allocations[ii]     = k_mem_alloc((size_t)(rand() % 50));
+//        if (allocations[ii] == NULL) {
+//            tprintf("k_mem_alloc() failed to allocate memory!");
+//            no_problems = false;
+//            break;
+//        }
+//        *allocations[ii]    = 123;
 //    }
 //
-//    if (k_mem_dealloc((void*)lab2sanity) != RTX_OK) {
-//        tprintf("k_mem_dealloc() failed to deallocate memory!");
-//        treturn(false);
-//    }
-//    lab2sanity = NULL;
+//    for (size_t ii = 0; ii < (INSANITY_LEVEL / 2); ++ii) {
+//        size_t random_idx = (size_t)(rand() % INSANITY_LEVEL);
+//        while (allocations[random_idx] == NULL) {
+//            random_idx = (size_t)(rand() % INSANITY_LEVEL);
+//        }
 //
-//    treturn(true);
+//        if (*allocations[random_idx] != 123) {
+//            tprintf("Memory corruption detected!");
+//            no_problems = false;
+//        }
+//
+//        if (k_mem_dealloc(allocations[random_idx]) != RTX_OK) {
+//            printf("k_mem_dealloc() failed to deallocate memory!");
+//            //Failure to dealloc is catastrophic, there's no way to clean up!
+//            treturn(false);
+//        }
+//        allocations[random_idx] = NULL;
+//    }
+//
+//    for (size_t ii = 0; ii < INSANITY_LEVEL; ++ii) {
+//        if (allocations[ii]) {
+//            if (*allocations[ii] != 123) {
+//                tprintf("Memory corruption detected!");
+//                no_problems = false;
+//            }
+//            if (k_mem_dealloc(allocations[ii]) != RTX_OK) {
+//                printf("k_mem_dealloc() failed to deallocate memory!");
+//                treturn(false);
+//            }
+//            allocations[ii] = NULL;
+//        }
+//    }
+//
+//    tprintf("Interesting pattern...");
+//    for (int ii = 0; ii < INSANITY_LEVEL; ++ii) {
+//        void* ptr1 = k_mem_alloc((size_t)(rand() % 4096));
+//        if (ptr1 == NULL) {
+//            tprintf("k_mem_alloc() failed to allocate memory!");
+//            treturn(false);
+//        }
+//        void* ptr2 = k_mem_alloc((size_t)(rand() % 4096));
+//        if (ptr2 == NULL) {
+//            tprintf("k_mem_alloc() failed to allocate memory!");
+//            treturn(false);
+//        }
+//        if (k_mem_dealloc(ptr1) == RTX_ERR) {
+//            tprintf("k_mem_dealloc() failed to deallocate memory!");
+//            treturn(false);
+//        }
+//        void* ptr3 = k_mem_alloc((size_t)(rand() % 4096));
+//        if (ptr3 == NULL) {
+//            tprintf("k_mem_alloc() failed to allocate memory!");
+//            treturn(false);
+//        }
+//        void* ptr4 = k_mem_alloc((size_t)(rand() % 4096));
+//        if (ptr4 == NULL) {
+//            tprintf("k_mem_alloc() failed to allocate memory!");
+//            treturn(false);
+//        }
+//        if (k_mem_dealloc(ptr2) == RTX_ERR) {
+//            tprintf("k_mem_dealloc() failed to deallocate memory!");
+//            treturn(false);
+//        }
+//        if (k_mem_dealloc(ptr4) == RTX_ERR) {
+//            tprintf("k_mem_dealloc() failed to deallocate memory!");
+//            treturn(false);
+//        }
+//        void* ptr5 = k_mem_alloc((size_t)(rand() % 4096));
+//        void* ptr6 = k_mem_alloc((size_t)(rand() % 4096));
+//        void* ptr7 = k_mem_alloc((size_t)(rand() % 4096));
+//        if (ptr5 == NULL) {
+//            tprintf("k_mem_alloc() failed to allocate memory!");
+//            treturn(false);
+//        }
+//        if (k_mem_dealloc(ptr5) == RTX_ERR) {
+//            tprintf("k_mem_dealloc() failed to deallocate memory!");
+//            treturn(false);
+//        }
+//        if (k_mem_dealloc(ptr3) == RTX_ERR) {
+//            tprintf("k_mem_dealloc() failed to deallocate memory!");
+//            treturn(false);
+//        }
+//
+//        //Rest of the pattern. If you survive the above you'll probably survive this
+//        k_mem_dealloc(ptr6);
+//        void* ptr8 = k_mem_alloc((size_t)(rand() % 4096));
+//        k_mem_dealloc(ptr8);
+//        k_mem_dealloc(ptr7);
+//        void* ptr9  = k_mem_alloc((size_t)(rand() % 4096));
+//        void* ptr10 = k_mem_alloc((size_t)(rand() % 4096));
+//        k_mem_dealloc(ptr10);
+//        k_mem_dealloc(ptr9);
+//    }
+//
+//    treturn(no_problems);
 //}
 //
 //static void reject_bad_tcbs(void*) {
@@ -1275,6 +1554,86 @@
 //
 //    tprintf("I feel myself slipping away, good thing I'm insured, that's how this works right?");
 //    osTaskExit();
+//}
+//
+//static void mem_ownership_helper(void*) {
+//    void* ptr_copy      = k_mem_alloc(1);
+//    if (ptr_copy == NULL) {
+//        tprintf("k_mem_alloc() failed to allocate memory!");
+//        mem_ownership_ptr = (void*)0xDEADBEEF;
+//        osTaskExit();
+//    }
+//    mem_ownership_ptr = ptr_copy;
+//
+//    while (mem_ownership_ptr != NULL) {
+//        osYield();
+//    }
+//
+//    if (k_mem_dealloc(ptr_copy) != RTX_OK) {
+//        tprintf("k_mem_dealloc() failed to deallocate memory!");
+//        mem_ownership_ptr = (void*)0xDEADBEEF;
+//        osTaskExit();
+//    }
+//
+//    ptr_copy            = NULL;
+//    mem_ownership_ptr   = (void*)0xFFFFFFFF;
+//    osTaskExit();
+//}
+//
+//static void mem_ownership(void*) {
+//    void* my_alloc = k_mem_alloc(1);
+//    if (my_alloc == NULL) {
+//        tprintf("k_mem_alloc() failed to allocate memory!");
+//        treturn(false);
+//    }
+//
+//    mem_ownership_ptr = NULL;
+//
+//    TCB task;
+//    memset(&task, 0, sizeof(TCB));
+//    task.ptask      = mem_ownership_helper;
+//    task.stack_size = STACK_SIZE;
+//    if (osCreateTask(&task) != RTX_OK) {
+//        tprintf("Failed to create a new task!");
+//        k_mem_dealloc(my_alloc);
+//        treturn(false);
+//    }
+//
+//    while (mem_ownership_ptr == NULL) {//Wait until the helper allocates
+//        osYield();
+//    }
+//
+//    if (mem_ownership_ptr == (void*)0xDEADBEEF) {
+//        tprintf("The helper task failed to allocate memory!");
+//        k_mem_dealloc(my_alloc);
+//        treturn(false);
+//    }
+//
+//    if (k_mem_dealloc(mem_ownership_ptr) != RTX_ERR) {
+//        tprintf("k_mem_dealloc() deallocated memory that it didn't own!");
+//        mem_ownership_ptr = NULL;//Tell the helper to move on and exit
+//        treturn(false);
+//    }
+//
+//    if (k_mem_dealloc(my_alloc) != RTX_OK) {
+//        tprintf("k_mem_dealloc() failed to deallocate memory we did own!");
+//        mem_ownership_ptr = NULL;//Tell the helper to move on and exit
+//        treturn(false);
+//    }
+//
+//    mem_ownership_ptr = NULL;//Tell the helper to move on and exit
+//
+//    while (mem_ownership_ptr == NULL) {//Wait until the helper deallocates
+//        osYield();
+//    }
+//
+//    if (mem_ownership_ptr == (void*)0xDEADBEEF) {
+//        tprintf("The helper task failed to deallocate memory!");
+//        k_mem_dealloc(my_alloc);
+//        treturn(false);
+//    }
+//
+//    treturn(true);
 //}
 //
 //static void insanity_helper(void*) {

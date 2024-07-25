@@ -11,11 +11,11 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
+#include <main.h>
 
 // ------- Globals --------
-Kernel_Variables kernelVariables = {.currentRunningTID = -1,
+Kernel_Variables kernelVariables = {.currentRunningTID  = -1,
 									.kernelInitRan = 0,
-									.numAvaliableTasks = 0,
 									.kernelStarted = 0,
 									.totalStackUsed = MAIN_STACK_SIZE + NULL_TASK_STACK_SIZE,
 									.endOfHeap = 0,
@@ -33,25 +33,32 @@ inline U32 CLZ(U32 num) {
 }
 
 void osKernelInit(void) {
-	osInitTCBArray();
 	kernelVariables.kernelInitRan = 1;
 	kernelVariables.startOfHeap = (unsigned int)&_img_end;
 	kernelVariables.endOfHeap = (unsigned int)&_estack - (unsigned int)&_Min_Stack_Size;
+
+	// https://piazza.com/class/lvlcv9pc4496o8/post/227
+	SHPR3 |= 0xFFU << 24; //Set the priority of SysTick to be the weakest
+	SHPR3 |= 0xFEU << 16; //shift the constant 0xFE 16 bits to set PendSV priority
+	SHPR2 |= 0xFDU << 24; //set the priority of SVC higher than PendSV
+	k_mem_init();
+	osInitTCBArray();
 	return;
 }
 
 void osInitTCBArray(void) {
+	Block* block = k_mem_alloc(NULL_TASK_STACK_SIZE);
 	// Initializing null task
 	kernelVariables.tcbList[0].ptask = (void*) &Null_Task_Function;
-	kernelVariables.tcbList[0].stack_high = (U32) Get_Thread_Stack(0x400);
+	kernelVariables.tcbList[0].stack_high = (U32) block + NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].tid = TID_NULL;
 	kernelVariables.tcbList[0].state = READY;
 	kernelVariables.tcbList[0].stack_size = NULL_TASK_STACK_SIZE;
 	kernelVariables.tcbList[0].current_sp = kernelVariables.tcbList[0].stack_high;
-	kernelVariables.tcbList[0].original_stack_size = NULL_TASK_STACK_SIZE;
-	kernelVariables.tcbList[0].args = NULL;
+	kernelVariables.tcbList[0].deadline_ms = 4294967295;
+	kernelVariables.tcbList[0].remainingTime = 4294967295;
 
-	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].stack_high, kernelVariables.tcbList[0].ptask, 0);
+	Init_Thread_Stack((U32*)kernelVariables.tcbList[0].current_sp, kernelVariables.tcbList[0].ptask, 0);
 
 	// Initialize each task 
 	for (int i = 1; i < MAX_TASKS; i++) {
@@ -61,8 +68,8 @@ void osInitTCBArray(void) {
 		kernelVariables.tcbList[i].state = CREATED;
 		kernelVariables.tcbList[i].stack_size = 0;
 		kernelVariables.tcbList[i].current_sp = 0x0;
-		kernelVariables.tcbList[i].original_stack_size = 0;
-		kernelVariables.tcbList[i].args = NULL;
+		kernelVariables.tcbList[i].deadline_ms = 5;
+		kernelVariables.tcbList[i].remainingTime = 5;
 	}
 
 	return;
@@ -96,17 +103,9 @@ int k_mem_count_extfrag(size_t size) {
 void osInitBuddyHeap(void) {
 	buddyHeap.currentBlockListSize = 0;
 
-//	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-//		buddyHeap.blockList[i] = NULL;
-//	}
-
 	for (int i = 0; i < HEIGHT_OF_TREE; i++) {
 		buddyHeap.freeList[i] = NULL;
 	}
-
-//	for (int i = 0; i < NUMBER_OF_NODES; i++) {
-//		buddyHeap.bitArray[i] = 0;
-//	}
 
 	Block* initial_block = Create_Block(kernelVariables.endOfHeap - kernelVariables.startOfHeap, (U32*)kernelVariables.startOfHeap, FREE, -1);
 	Free_List_Push(initial_block, 0);
@@ -161,7 +160,7 @@ void* k_mem_alloc(size_t size)
 
 			currBlock = Free_List_Pop(required_idx);
 			currBlock->type = USED;
-			currBlock->TIDofOwner = (int8_t)kernelVariables.currentRunningTID;
+			currBlock->TIDofOwner = kernelVariables.currentRunningTID;
 			return (void*) ((U32) currBlock + sizeof(Block));
 		}
 
@@ -169,7 +168,6 @@ void* k_mem_alloc(size_t size)
 		currIndex--;
 	}
 	DEBUG_PRINTF("Smallest free block order: %d, index: %d, smallest free block index: %d\r\n", required_order, required_idx, currIndex);
-
 	return NULL;
 }
 
@@ -194,7 +192,7 @@ int k_mem_dealloc(void* ptr) {
 
 	// If the magic number does not match, or if the TID does not match the owner TID, or the block is already FREE, log and return an error.
 	if (kernelVariables.currentRunningTID != block->TIDofOwner || block->type == FREE) {
-		DEBUG_PRINTF("  ERROR: The block is not a valid block to free.");
+		DEBUG_PRINTF("  ERROR: The block is not a valid block to free.\r\n");
 		return RTX_ERR;
 	}
 
@@ -262,7 +260,6 @@ int k_mem_dealloc(void* ptr) {
 			break;
 		}
 	}
-
 	return RTX_OK;
 }
 
@@ -322,7 +319,7 @@ __attribute__((always_inline))
 inline Block* Split_Block(Block* parentBlock, U32 parentFreeListIdx){
 //	U32 parentOrder = CALCULATE_ORDER_FROM_FREELIST_IDX(parentFreeListIdx);
 	U32 newSize = parentBlock->size/2;
-	DEBUG_PRINTF("Starting address: %p\r\n", parentBlock);
+	DEBUG_PRINTF("Starting address: %p\r\n", &parentBlock);
 
 	// ---- Create block ----
 	Block* createdBlock = (void*) ((U32)parentBlock + newSize);
@@ -450,7 +447,7 @@ inline Block* Get_Buddy(Block* block) {
 	DEBUG_PRINTF("  INFO: Block to dealloc address: %x, Buddy address: %x, Block to dealloc size: %d. XOR size value: %d.\r\n", block, buddyAddress, block->size, 1 << order);
 
 #ifdef DEBUG_ENABLE
-	if (buddy->magicNum == MAGIC_NUMBER_BLOCK) {
+	if (buddy->TIDofOwner == kernelVariables.currentRunningTID) {
 		DEBUG_PRINTF("  INFO: Valid buddy address!\r\n");
 		return buddy;
 	} else {

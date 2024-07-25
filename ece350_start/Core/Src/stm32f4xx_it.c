@@ -44,7 +44,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -186,6 +185,20 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
+//  DEBUG_PRINTF(" IN SYSTICK\r\n");
+  if (kernelVariables.kernelStarted != 1) {
+	  return;
+  }
+
+  // SysTick Handler is ran every 1ms.
+  for (int i = 1; i < MAX_TASKS; i++) {
+	  kernelVariables.tcbList[i].remainingTime--;
+  }
+
+  SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
+  __asm("isb");
+
+  return;
   /* USER CODE END SysTick_IRQn 1 */
 }
 

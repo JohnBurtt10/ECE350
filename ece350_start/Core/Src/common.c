@@ -27,7 +27,7 @@ unsigned int Get_Total_Memory_Used() {
 int Scheduler(void) {
 	int TIDTaskToRun = 0;
 	// Start from current running tid and find next one to run
-	for (int i = kernelVariables.currentRunningTID + 1; i <= MAX_TASKS + kernelVariables.currentRunningTID; i++) {
+	for (int i = kernelVariables.currentRunningTID + 1; i <= MAX_TASKS + kernelVariables.currentRunningTID ; i++) {
 		int TID = i % MAX_TASKS;
 
 		// Ignore null task. Find a TID that is in the ready state.
@@ -38,5 +38,33 @@ int Scheduler(void) {
 	}
 	
 	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
+	return TIDTaskToRun;
+}
+
+__attribute__((always_inline))
+inline int EDFScheduler(void) {
+	int TIDTaskToRun = 0;
+	U8 isTIDFound = 0;
+	U32 shortestDeadline = kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime;
+
+	for (int i = 1; i < MAX_TASKS; i++) {
+		TCB currentTCB = kernelVariables.tcbList[i];
+
+		if (currentTCB.state == SLEEPING && currentTCB.remainingTime == 0) {
+			currentTCB.state = READY;
+			currentTCB.remainingTime = currentTCB.deadline_ms;
+		}
+
+		if (currentTCB.state == READY) {
+			if (currentTCB.remainingTime < shortestDeadline
+					|| ((currentTCB.remainingTime == shortestDeadline) && currentTCB.tid < TIDTaskToRun && isTIDFound == 1)) {
+				shortestDeadline = currentTCB.deadline_ms;
+				TIDTaskToRun = i;
+				isTIDFound = 1;
+			}
+		}
+	}
+
+//	DEBUG_PRINTF(" TID TO SCHEDULE: %d\r\n", TIDTaskToRun);
 	return TIDTaskToRun;
 }

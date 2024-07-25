@@ -13,6 +13,12 @@
 #include <stdint.h>
 #include "common.h"
 
+#define SHPR2 *(uint32_t*)0xE000ED1C //for setting SVC priority, bits 31-24
+#define SHPR3 *(uint32_t*)0xE000ED20 //PendSV is bits 23-16
+
+// https://developer.arm.com/documentation/101407/0540/Debugging/Debug-Windows-and-Dialogs/Core-Peripherals/Armv7-M-cores/Armv7-M--System-Tick-Timer
+#define ST_CURRENT *(uint32_t*) 0xE000E018 // SysTick Current Value Register
+
 /**
  * @brief: Creates a new thread stack. Returns pointer to top of stack.
  */
@@ -72,5 +78,16 @@ void Null_Task_Function(void);
  * Returns 0 if the Kernel has not started
  */
 task_t osGetTID(void);
+
+void osSleep(int timeInMs);
+
+int osCreateDeadlineTask(int deadline, TCB* task);
+
+/**
+ * @brief: Schedules the periodic task only if the current period has elapsed
+ */
+void osPeriodYield();
+
+void osSetDeadline(int deadline, task_t TID);
 
 #endif /* INC_K_TASK_H_ */

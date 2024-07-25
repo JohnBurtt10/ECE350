@@ -19,6 +19,13 @@ int osCreateTask(TCB* task) {
 	return output;
 }
 
+int osCreateDeadlineTask(int deadline, TCB* task) {
+	int output;
+	TRIGGER_SVC(OS_CREATE_DEADLINE_TASK);
+	__asm("MOV %0, R0": "=r"(output));
+	return output;
+}
+
 void osYield(void) {
 	TRIGGER_SVC(OS_YIELD);
 }
@@ -28,7 +35,6 @@ int osKernelStart(void) {
 
 	TRIGGER_SVC(OS_KERNEL_START);
 	__asm("MOV %0, R0": "=r"(output));
-
 	/* If the kernel was successful started, call osYield to run the first task */
 	if (output == RTX_OK){
 		TRIGGER_SVC(OS_YIELD);
@@ -60,28 +66,29 @@ task_t osGetTID (void) {
 	return tid;
 }
 
-uint32_t* Get_Thread_Stack(unsigned int stack_size){
-	// Ensuring that there is enough space in the thread stack
-	if (stack_size < STACK_SIZE){
-		DEBUG_PRINTF("  Failed to get starting address for thread stack due to stack size being too small\r\n");
-		return NULL;
-	}
+int osTaskExit(void){
+	int taskExitStatus;
 
-	if (kernelVariables.totalStackUsed + stack_size > MAX_STACK_SIZE){
-		DEBUG_PRINTF("  Failed to get starting address for thread stack due not enough memory\r\n");
-		return NULL;
-	}
+	TRIGGER_SVC(OS_TASK_EXIT);
+	__asm("MOV %0, R0": "=r"(taskExitStatus));
 
-	// ARM Cortex architecture grows stack grows downwards (high address to low address)
-	uint32_t newStackStart = (unsigned int)Get_MSP_INIT_VAL() - MAIN_STACK_SIZE; // Starting position
+	return taskExitStatus;
+}
 
-	// Iterate through the stacks of each tcb to get the starting address
-	for (int i = 0; i < MAX_TASKS; i++) {
-		newStackStart -= kernelVariables.tcbList[i].original_stack_size;
-	}
+void osSleep(int timeInMs) {
+	TRIGGER_SVC(OS_SLEEP);
+}
 
-	DEBUG_PRINTF("  Found starting address for thread stack: %p. Size: %d\r\n", (uint32_t*)newStackStart, stack_size);
-	return (uint32_t*) newStackStart;
+void osSetDeadline(int deadline, task_t TID) {
+	int output;
+	TRIGGER_SVC(OS_SET_DEADLINE);
+	__asm("MOV %0, R0": "=r"(output));
+
+}
+
+
+void osPeriodYield(){
+	TRIGGER_SVC(OS_PERIOD_YIELD);
 }
 
 void Null_Task_Function(void) {
@@ -92,11 +99,3 @@ void Null_Task_Function(void) {
 	return;
 }
 
-int osTaskExit(void){	
-	int taskExitStatus;
-
-	TRIGGER_SVC(OS_TASK_EXIT);
-	__asm("MOV %0, R0": "=r"(taskExitStatus));
-	
-	return taskExitStatus;
-}
