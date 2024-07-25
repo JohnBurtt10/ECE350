@@ -297,7 +297,7 @@ void TaskA(void *) {
 
 void TaskB(void *) {
    while(1){
-	printf("Task B\r\n");
+	// printf("Task B\r\n");
       i_test = i_test + 1;
       osPeriodYield();
    }
@@ -305,7 +305,7 @@ void TaskB(void *) {
 
 void TaskC(void *) {
    while(1){
-	printf("Task C\r\n");
+	// printf("Task C\r\n");
       i_test2 = i_test2 + 1;
       osPeriodYield();
    }
