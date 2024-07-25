@@ -35,6 +35,14 @@ void Task2_Function(void);
 
 void Print_Free_List();
 
+void Task3(void *);
+void Task2(void *);
+void Task1(void *);
+
+void TaskA(void *);
+void TaskB(void *);
+void TaskC(void *);
+
 TCB task;
 
 #ifdef DEBUG_ENABLE
@@ -55,10 +63,35 @@ int main(void)
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	osKernelInit();
-	TCB task = {.ptask = &Task1_Function, .stack_size = 0x200};
-	TCB task2 = {.ptask = &Task2_Function, .stack_size = 0x200};
-	osCreateDeadlineTask(4, &task);
-	osCreateDeadlineTask(11, &task2);
+	// TCB task = {.ptask = &Task1_Function, .stack_size = 0x200};
+	// TCB task2 = {.ptask = &Task2_Function, .stack_size = 0x200};
+	// osCreateDeadlineTask(4, &task);
+	// osCreateDeadlineTask(11, &task2);
+	// osKernelStart();
+
+	TCB st_mytask;
+  	st_mytask.stack_size = STACK_SIZE;
+	st_mytask.ptask = &Task1;
+	osCreateTask(&st_mytask);
+
+
+	st_mytask.ptask = &Task2;
+	osCreateTask(&st_mytask);
+
+
+	st_mytask.ptask = &Task3;
+	osCreateTask(&st_mytask);
+
+	// TCB st_mytask;
+	// st_mytask.stack_size = STACK_SIZE;
+	// st_mytask.ptask = &TaskA;
+	// osCreateDeadlineTask(4, &st_mytask);
+
+	// st_mytask.ptask = &TaskB;
+	// osCreateDeadlineTask(4, &st_mytask); 
+
+	// st_mytask.ptask = &TaskC;
+	// osCreateDeadlineTask(12, &st_mytask);
 
 	osKernelStart();
 	while(1)
@@ -222,3 +255,58 @@ void Print_All_TCBs() {
 	}
 }
 
+
+void Task1(void *) {
+   while(1){
+     printf("1\r\n");
+      for (int i_cnt = 0; i_cnt < 5000; i_cnt++);
+     osYield();
+   }
+}
+
+
+void Task2(void *) {
+   while(1){
+     printf("2\r\n");
+     for (int i_cnt = 0; i_cnt < 5000; i_cnt++);
+     osYield();
+   }
+}
+
+
+void Task3(void *) {
+   while(1){
+     printf("3\r\n");
+     for (int i_cnt = 0; i_cnt < 5000; i_cnt++);
+    //  osYield();
+   }
+}
+
+
+int i_test = 0;
+
+int i_test2 = 0;
+
+
+void TaskA(void *) {
+   while(1){
+      printf("Task A: %d, %d\r\n", i_test, i_test2);
+      osPeriodYield();
+   }
+}
+
+void TaskB(void *) {
+   while(1){
+	// printf("Task B\r\n");
+      i_test = i_test + 1;
+      osPeriodYield();
+   }
+}
+
+void TaskC(void *) {
+   while(1){
+	// printf("Task C\r\n");
+      i_test2 = i_test2 + 1;
+      osPeriodYield();
+   }
+}

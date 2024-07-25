@@ -92,7 +92,7 @@ void osPeriodYield(){
 }
 
 void Null_Task_Function(void) {
-	DEBUG_PRINTF("  IN NULL TASK :(\r\n");
+	// DEBUG_PRINTF("  IN NULL TASK :(\r\n");
 
 	while (1);
 

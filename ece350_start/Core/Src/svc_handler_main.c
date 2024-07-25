@@ -192,17 +192,17 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		TCB* currentTCB2 = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		// Verify that periodic task has completed the current instance
 		// Check if remaining period time is <0 (current time period elapses) (at deadline or deadline is missed), so soft deadline so it will be reset
-		DEBUG_PRINTF("Task %d, remaining time: %d, deadline: %d, state: %d\r\n", kernelVariables.currentRunningTID, currentTCB2->remainingTime, currentTCB2->deadline_ms, currentTCB2->state);
+		// DEBUG_PRINTF("Task %d, remaining time: %d, deadline: %d, state: %d\r\n", kernelVariables.currentRunningTID, currentTCB2->remainingTime, currentTCB2->deadline_ms, currentTCB2->state);
 		if(currentTCB2->remainingTime <= 0){ 
 			// Task is only ready when the current period is completed
 			currentTCB2->state = READY;
 			// Reset task's time remaining back to its deadline
 			currentTCB2->remainingTime = currentTCB2->deadline_ms;
-			DEBUG_PRINTF("Current time period elapses, adding task to scheduler\r\n");
+			// DEBUG_PRINTF("Current time period elapses, adding task to scheduler\r\n");
 		}
 		else{
 			currentTCB2->state = SLEEPING;
-			DEBUG_PRINTF("Period not elapsed\r\n");
+			// DEBUG_PRINTF("Period not elapsed\r\n");
 		}
 
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk; // Trigger PendSV_Handler
