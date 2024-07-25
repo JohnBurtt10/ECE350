@@ -69,29 +69,29 @@ int main(void)
 	// osCreateDeadlineTask(11, &task2);
 	// osKernelStart();
 
-	// TCB st_mytask;
-  	// st_mytask.stack_size = STACK_SIZE;
-	// st_mytask.ptask = &Task1;
-	// osCreateTask(&st_mytask);
-
-
-	// st_mytask.ptask = &Task2;
-	// osCreateTask(&st_mytask);
-
-
-	// st_mytask.ptask = &Task3;
-	// osCreateTask(&st_mytask);
-
 	TCB st_mytask;
-	st_mytask.stack_size = STACK_SIZE;
-	st_mytask.ptask = &TaskA;
-	osCreateDeadlineTask(4, &st_mytask);
+  	st_mytask.stack_size = STACK_SIZE;
+	st_mytask.ptask = &Task1;
+	osCreateTask(&st_mytask);
 
-	st_mytask.ptask = &TaskB;
-	osCreateDeadlineTask(4, &st_mytask); 
 
-	st_mytask.ptask = &TaskC;
-	osCreateDeadlineTask(12, &st_mytask);
+	st_mytask.ptask = &Task2;
+	osCreateTask(&st_mytask);
+
+
+	st_mytask.ptask = &Task3;
+	osCreateTask(&st_mytask);
+
+	// TCB st_mytask;
+	// st_mytask.stack_size = STACK_SIZE;
+	// st_mytask.ptask = &TaskA;
+	// osCreateDeadlineTask(4, &st_mytask);
+
+	// st_mytask.ptask = &TaskB;
+	// osCreateDeadlineTask(4, &st_mytask); 
+
+	// st_mytask.ptask = &TaskC;
+	// osCreateDeadlineTask(12, &st_mytask);
 
 	osKernelStart();
 	while(1)
@@ -259,7 +259,7 @@ void Print_All_TCBs() {
 void Task1(void *) {
    while(1){
      printf("1\r\n");
-     for (int i_cnt = 0; i_cnt < 5000; i_cnt++);
+      for (int i_cnt = 0; i_cnt < 5000; i_cnt++);
      osYield();
    }
 }
@@ -278,7 +278,7 @@ void Task3(void *) {
    while(1){
      printf("3\r\n");
      for (int i_cnt = 0; i_cnt < 5000; i_cnt++);
-     osYield();
+    //  osYield();
    }
 }
 
