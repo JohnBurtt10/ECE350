@@ -88,7 +88,7 @@ int main(void)
 	// osCreateDeadlineTask(4, &st_mytask);
 
 	// st_mytask.ptask = &TaskB;
-	// osCreateDeadlineTask(4, &st_mytask); 
+	// osCreateDeadlineTask(4, &st_mytask);
 
 	// st_mytask.ptask = &TaskC;
 	// osCreateDeadlineTask(12, &st_mytask);
@@ -278,7 +278,7 @@ void Task3(void *) {
    while(1){
      printf("3\r\n");
      for (int i_cnt = 0; i_cnt < 5000; i_cnt++);
-    //  osYield();
+     osYield();
    }
 }
 

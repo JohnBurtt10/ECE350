@@ -12,7 +12,7 @@
 #define INC_COMMON_H_
 
 #include <stdint.h>
-#define DEBUG_ENABLE // Comment me out to disable debugging
+//#define DEBUG_ENABLE // Comment me out to disable debugging
 
 #ifdef DEBUG_ENABLE
 	#define DEBUG_PRINTF(fmt, ...) printf("DEBUG_PRINTF<<" fmt, ##__VA_ARGS__)
