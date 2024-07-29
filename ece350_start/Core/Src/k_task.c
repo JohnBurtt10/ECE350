@@ -79,10 +79,12 @@ void osSleep(int timeInMs) {
 	TRIGGER_SVC(OS_SLEEP);
 }
 
-void osSetDeadline(int deadline, task_t TID) {
-	int output;
+int osSetDeadline(int deadline, task_t TID) {
+	int setDeadlineStatus;
 	TRIGGER_SVC(OS_SET_DEADLINE);
-	__asm("MOV %0, R0": "=r"(output));
+	__asm("MOV %0, R0": "=r"(setDeadlineStatus));
+
+	return setDeadlineStatus;
 
 }
 
