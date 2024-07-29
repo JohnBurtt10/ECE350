@@ -131,7 +131,7 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		int deadline = (int) svc_args[0];
 		TID = (task_t) svc_args[1];
 
-		if ((deadline < 0) || TID == &kernelVariables.tcbList[kernelVariables.currentRunningTID]) {
+		if ((deadline < 0) || TID == &kernelVariables.tcbList[kernelVariables.currentRunningTID] || TID == 0) {
 		DEBUG_PRINTF("  osSetDeadline received an invalid deadline or TID, returning RTX_ERROR\r\n");
 		return RTX_ERR;
 		}
