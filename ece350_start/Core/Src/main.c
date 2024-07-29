@@ -32,7 +32,7 @@
  * Constants/Defines
  * --------------------------------------------------------------------------------------------- */
 
-#define NUM_TEST_FUNCTIONS 18
+#define NUM_TEST_FUNCTIONS 23
 
 //X macros are magical! :)
 
@@ -41,8 +41,12 @@
 #define TEST_FUNCTIONS \
     X(prempt,                       STACK_SIZE, 5,      "Can you prempt tasks?",                                        "JZJ") \
     X(sanity,                       STACK_SIZE, 5,      "Basic sanity test",                                            "JZJ") \
+    X(lab3_bad_inputs,              STACK_SIZE, 5,      "No! Bad!",                                                     "JZJ") \
+    X(set_deadline_prempt,          STACK_SIZE, 5,      "Will osSetDeadline() prempt tasks?",                           "JZJ") \
+    X(new_task_deadline_prempt,     STACK_SIZE, 5,      "Will osCreateDeadlineTask() prempt tasks?",                    "JZJ") \
     X(beeg_stack,                   16384 - 32, 5,      "Ensures you're using your heap allocator for task stacks",     "JZJ") \
     X(eternalprintf,                STACK_SIZE, 5,      "Group 13's first testcase. No idea why that's the name...",    "JZJ") \
+    X(square_batman_returns,        STACK_SIZE, 5,      "My version of backwards_compatibility() on LEARN",             "JZJ") \
     X(lab2sanity,                   STACK_SIZE, 5,      "Allocates and deallocates some memory!",                       "JZJ") \
     X(free_me_from_my_pain,         STACK_SIZE, 5,      "Attempts to free you from existence with DEADLY pointers!",    "JZJ") \
     X(extfrag,                      STACK_SIZE, 5,      "Tests k_mem_count_extfrag()",                                  "JZJ") \
@@ -50,13 +54,14 @@
     X(stack_reuse,                  STACK_SIZE, 5,      "Basic stack reuse test",                                       "JZJ") \
     X(odds_are_stacked_against_you, STACK_SIZE, 5,      "Stack integrity test across osYield()",                        "JZJ") \
     X(i_prefer_latches,             STACK_SIZE, 5,      "Register integrity test across osYield()",                     "JZJ") \
+    X(stack_ownership,              STACK_SIZE, 5,      "Ensure's you can't free another task's stack",                 "JZJ") \
     X(tid_limits,                   STACK_SIZE, 5,      "Maximum number of TIDs test",                                  "JZJ") \
     X(tid_uniqueness,               STACK_SIZE, 5,      "Ensure the same TID isn't used for two tasks",                 "JZJ") \
     X(reincarnation,                STACK_SIZE, 5,      "A task whose last act is to recreate itself",                  "JZJ") \
     X(mem_ownership,                STACK_SIZE, 5,      "Ensures you can't free memory you don't own",                  "JZJ") \
     X(insanity,                     0x400,      5,      "This is a tough one, but you can do it!",                      "JZJ") \
     X(kachow,                       0x400,      5,      "Gotta go fast! Wait no that's a different franchise.",         "JZJ") \
-    X(greedy,                       STACK_SIZE, 5,      "Stack exaustion test. No longer needs to come last!",          "JZJ")
+    X(greedy,                       STACK_SIZE, 5,      "Stack exaustion test. Must still come last actually",          "JZJ")
 
 //TODO fix these two for Lab 3
 //X(insanity2,                    0x400,      "Your heap will weep!",                                         "JZJ") \
@@ -69,7 +74,7 @@
 //Bonus tests (not required to support these)!
 //X(task_wrapper_test,            STACK_SIZE,     "What happens if a task's function returns?",                   "JZJ")
 
-#define NUM_PRIVILEGED_TESTS 23
+#define NUM_PRIVILEGED_TESTS 25
 
 //The largest block header size we'd ever expect for a group's code
 #define MAX_BLOCK_HEADER_SIZE 16
@@ -155,7 +160,7 @@ static void     spinner(void*);//Spins while osYield()ing until it "topples". Us
 static void     topple_spinners(void);//Waits for spinners to exit
 static task_t   beyblade_let_it_rip(void);//Does anyone remember this show? Kinda just a marketing stunt to sell spinning tops...
 
-static void test4ispain_helper(void*);
+static void square_batman_helper(void*);
 static void mem_ownership_helper(void*);
 static void insanity_helper(void*);
 
@@ -208,6 +213,7 @@ static volatile bool    topple     = false;
 
 //Testcase-specific statics
 static volatile bool    prempt_flag = false;
+static volatile int     square_batman_counters[NUM_SIDEKICKS] = {0, 0, 0, 0, 0};
 static volatile size_t  insanity_counter = 0;
 static volatile void*   mem_ownership_ptr = NULL;
 
@@ -405,7 +411,8 @@ int main(void) {
 
     //Privileged test #17
     if (k_mem_init() != RTX_OK) {//FIXME what about testing if k_mem_init() works if called from a user task?
-        rprintf("    k_mem_init() failed!");
+        yprintf("    k_mem_init() failed (which might be okay if you called it yourself in osKernelInit())");
+        ++num_passed;
     } else {
         gprintf("    k_mem_init() was successful!");
         ++num_passed;
@@ -526,6 +533,16 @@ int main(void) {
         gprintf("    osTaskInfo() is behaving as expected before the kernel starts!");
         ++num_passed;
     }
+
+    //Privileged test #24
+    osSleep(1000);//osSleep() in privileged mode should do nothing (I'd assume)
+    gprintf("    osSleep() in privileged mode did nothing as expected!");
+    ++num_passed;
+
+    //Privileged test #25
+    osPeriodYield();//osPeriodYield() in privileged mode should do nothing (I'd assume)
+    gprintf("    osPeriodYield() in privileged mode did nothing as expected!");
+    ++num_passed;
 
     //And off we go!
     wprintf("Okay, I'm calling osKernelStart() now. This is a big step, don't get disheartened");
@@ -757,6 +774,168 @@ static void sanity(void*) {
     treturn(true);
 }
 
+static void lab3_bad_inputs(void*) {
+    //Tests for osSetDeadline()
+    if (osSetDeadline(5, osGetTID()) == RTX_OK) {
+        tprintf("You shouldn't be able to set your own deadline!");
+        treturn(false);
+    }
+
+    if (osSetDeadline(5, TID_NULL) == RTX_OK) {
+        tprintf("You shouldn't be able to set the NULL task's deadline!");
+        treturn(false);
+    }
+
+    if (osSetDeadline(5, 16) == RTX_OK) {
+        tprintf("16 is an invalid TID!");
+        treturn(false);
+    }
+
+    if (osSetDeadline(5, 3000) == RTX_OK) {
+        tprintf("3000 is an invalid TID!");
+        treturn(false);
+    }
+
+    task_t another_task = beyblade_let_it_rip();
+    if (another_task == TID_NULL) {
+        tprintf("Failed to create a task for testing!");
+        treturn(false);
+    }
+
+    if (osSetDeadline(0, another_task) == RTX_OK) {
+        tprintf("0 is an invalid deadline!");
+        topple_spinners();
+        treturn(false);
+    }
+
+    if (osSetDeadline(-27, another_task) == RTX_OK) {
+        tprintf("Negative deadlines are invalid!");
+        topple_spinners();
+        treturn(false);
+    }
+
+    topple_spinners();
+
+    //Tests for osCreateDeadlineTask()
+    if (osCreateDeadlineTask(5, NULL) == RTX_OK) {
+        tprintf("You shouldn't be able to create a task with a NULL TCB!");
+        treturn(false);
+    }
+
+    TCB task_that_shouldnt_be_successfully_created;
+    memset(&task_that_shouldnt_be_successfully_created, 0, sizeof(TCB));
+    task_that_shouldnt_be_successfully_created.ptask      = sanity;
+    task_that_shouldnt_be_successfully_created.stack_size = STACK_SIZE;
+
+    if (osCreateDeadlineTask(0, &task_that_shouldnt_be_successfully_created) == RTX_OK) {
+        tprintf("You shouldn't be able to create a task with a deadline of 0!");
+        treturn(false);
+    }
+
+    if (osCreateDeadlineTask(-1234, &task_that_shouldnt_be_successfully_created) == RTX_OK) {
+        tprintf("You shouldn't be able to create a task with a negative deadline!");
+        treturn(false);
+    }
+
+    task_that_shouldnt_be_successfully_created.ptask = NULL;
+    if (osCreateDeadlineTask(5, &task_that_shouldnt_be_successfully_created) == RTX_OK) {
+        tprintf("You shouldn't be able to create a task with a NULL ptask!");
+        treturn(false);
+    }
+
+    task_that_shouldnt_be_successfully_created.ptask      = sanity;
+    task_that_shouldnt_be_successfully_created.stack_size = STACK_SIZE - 1;
+    if (osCreateDeadlineTask(5, &task_that_shouldnt_be_successfully_created) == RTX_OK) {
+        tprintf("You shouldn't be able to create a task with a stack size that's too small!");
+        treturn(false);
+    }
+
+    //Convenient place for another unrelated test of osSetDeadline()
+    TCB technically_this_isnt_invalid_input_but_just_another_osCreateDeadlineTask_test;
+    memset(&technically_this_isnt_invalid_input_but_just_another_osCreateDeadlineTask_test, 0, sizeof(TCB));
+    technically_this_isnt_invalid_input_but_just_another_osCreateDeadlineTask_test.ptask      = sanity;
+    technically_this_isnt_invalid_input_but_just_another_osCreateDeadlineTask_test.stack_size = STACK_SIZE;
+    if (osCreateDeadlineTask(1, &technically_this_isnt_invalid_input_but_just_another_osCreateDeadlineTask_test) != RTX_OK) {
+        tprintf("You should be able to create a task with valid input!");
+        treturn(false);
+    }
+    if (technically_this_isnt_invalid_input_but_just_another_osCreateDeadlineTask_test.tid == 0) {
+        tprintf("You should set the TID when creating a task!");
+        treturn(false);
+    }
+    osPeriodYield();//So that the task can run and exit
+
+    //osSleep() tests
+    osSleep(0);     //This shouldn't break the kernel (probably just do nothing in this case)
+    osSleep(-123);  //This also shouldn't break things (probably just do nothing in this case)
+
+    treturn(true);
+}
+
+static void set_deadline_prempt(void*) {
+    static volatile bool is_second_task              = false;
+    static volatile bool flag_second_task_should_set = false;
+
+    if (is_second_task) {
+        flag_second_task_should_set = true;
+        osTaskExit();
+    } else {
+        is_second_task = true;
+        TCB second_task;
+        memset(&second_task, 0, sizeof(TCB));
+        second_task.ptask       = set_deadline_prempt;
+        second_task.stack_size  = STACK_SIZE;
+        if (osCreateDeadlineTask(100, &second_task) != RTX_OK) {//Shouldn't preempt
+            tprintf("Failed to create the second task!");
+            treturn(false);
+        }
+
+        if (flag_second_task_should_set) {
+            tprintf("Why did the second task already run?");
+            treturn(false);
+        }
+
+        if (osSetDeadline(1, second_task.tid) != RTX_OK) {//Should preempt
+            tprintf("Failed to set the second task's deadline!");
+            treturn(false);
+        }
+
+        if (!flag_second_task_should_set) {
+            tprintf("The second task didn't run first!");
+            treturn(false);
+        }
+
+        treturn(true);
+    }
+}
+
+static void new_task_deadline_prempt(void*) {
+    static volatile bool is_second_task              = false;
+    static volatile bool flag_second_task_should_set = false;
+
+    if (is_second_task) {
+        flag_second_task_should_set = true;
+        osTaskExit();
+    } else {
+        is_second_task = true;
+        TCB second_task;
+        memset(&second_task, 0, sizeof(TCB));
+        second_task.ptask       = new_task_deadline_prempt;
+        second_task.stack_size  = STACK_SIZE;
+        if (osCreateDeadlineTask(1, &second_task) != RTX_OK) {//Should preempt
+            tprintf("Failed to create the second task!");
+            treturn(false);
+        }
+
+        if (!flag_second_task_should_set) {
+            tprintf("The second task didn't run first!");
+            treturn(false);
+        }
+
+        treturn(true);
+    }
+}
+
 static void beeg_stack(void*) {
     //This should fail with Lab 1/2 code since a 16384 bytes is the amount of TOTAL
     //stack space. On the other hand, in Lab 3, this should totally be doable since, taking into
@@ -779,6 +958,142 @@ static void eternalprintf(void*) {
 
     osYield();//For kicks
 
+    treturn(true);
+}
+
+static void square_batman_helper(void*) {
+    //Printing messes up things since we have premption now
+
+    //Choose a counter for the test
+    int my_counter = 0;
+    for (int ii = 0; ii < NUM_SIDEKICKS; ++ii) {
+        if (square_batman_counters[ii] == 0) {
+            my_counter                  = ii;
+            square_batman_counters[ii]  = 1;
+            break;
+        }
+    }
+    //tprintf("I am Robin #%d!", my_counter);
+
+    //Wait for all Robins to pick their counter
+    while (square_batman_counters[NUM_SIDEKICKS - 1] == 0) {
+        osYield();
+    }
+
+    //Let's see how round these Robins are!
+    for (int ii = 1; ii < 10; ++ii) {
+        /*
+        tprintf(
+            "Incrementing counter %d from %d to %d",
+            my_counter,
+            square_batman_counters[my_counter],
+            square_batman_counters[my_counter] + 1
+        );
+        */
+        ++square_batman_counters[my_counter];
+
+        if ((ii == 5) && (my_counter == EVIL_ROBIN)) {
+            //tprintf("I AM EVIL #%d! I'm going to exit early and throw the other Robins off!", my_counter);
+            osTaskExit();
+        }
+
+        osPeriodYield();//Since we want to allow for the round robin niceness
+        osYield();//And then we want to give Batman a chance to check in on us
+    }
+
+    osTaskExit();
+}
+
+static void square_batman_returns(void*) {//Corresponds to Lab 1 evaluation outline #3 and #4
+    //Since we may be the task with the lowest TID, and our deadline could
+    //be aligned with the robins if we started quickly enough, we should make
+    //ourselves slightly lower priority so that we don't keep winning
+    //the tiebreaking logic.
+    //This is also a good test of osSetDeadline()
+    /*
+    int result = osSetDeadline(6, osGetTID());
+    if (result != RTX_OK) {
+        tprintf("osSetDeadline() failed!");
+        treturn(false);
+    }
+    */
+    //Haha, never mind, I forgot you can't set your own deadline!
+    //Instead, we'll just set the robins' deadlines lower!
+
+    //Setup robins
+    TCB helper_task;
+    memset(&helper_task, 0, sizeof(TCB));
+    helper_task.ptask      = square_batman_helper;
+    helper_task.stack_size = STACK_SIZE;
+
+    for (int ii = 0; ii < NUM_SIDEKICKS; ++ii) {
+        if (osCreateTask(&helper_task) != RTX_OK) {//Should have a deadline of 5
+            tprintf("we live in a society...");
+            treturn(false);
+        }
+
+        if (osSetDeadline(4, helper_task.tid) != RTX_OK) {
+            tprintf("osSetDeadline() failed!");
+            treturn(false);
+        }
+    }
+
+    //Wait for all Robins to pick their counter (we should get preempted)
+    while (square_batman_counters[NUM_SIDEKICKS - 1] == 0) {}
+
+    //Again, things are timing-sensitive, no printing (yet)...
+    //tprintf("I'M BATMAN!");
+
+    //The entire round robin test is complete when all counters are 10
+    bool all_counters_are_10 = false;
+    while (!all_counters_are_10) {
+        all_counters_are_10 = true;
+
+        //We should make it through this loop quick enough that we avoid tearing
+        int minimum = 11;
+        int maximum = 0;
+        for (int ii = 0; ii < NUM_SIDEKICKS; ++ii) {
+            if (ii == EVIL_ROBIN) {//Ignore the evil Robin
+                continue;
+            }
+
+            if (square_batman_counters[ii] != 10) {
+                all_counters_are_10 = false;
+            }
+
+            if (square_batman_counters[ii] < minimum) {
+                minimum = square_batman_counters[ii];
+            }
+
+            if (square_batman_counters[ii] > maximum) {
+                maximum = square_batman_counters[ii];
+            }
+        }
+
+        int difference = maximum - minimum;
+        if (difference > 1) {
+            osYield();
+            osYield();
+            osYield();
+            tprintf("Your Robins aren't round enough!");
+            tprintf("The difference between the highest and lowest Robin counter is %d", difference);
+            for (int ii = 0; ii < NUM_SIDEKICKS; ++ii) {
+                tprintf("    Robin #%d: %d", ii, square_batman_counters[ii]);
+            }
+            treturn(false);
+        }
+
+        osYield();
+    }
+
+    //Success! Yield a few times just to ensure the Robins exit
+    osYield();
+    osYield();
+    osYield();
+
+    //We'll print here instead :)
+    tprintf("I'M BATMAN!");
+    tprintf("Your Robins are perfectly round!");
     treturn(true);
 }
 
@@ -1113,8 +1428,8 @@ static void kachow(void*) {
     uint32_t your_average_time = your_total_cycles / (KACHOW_ITERATIONS * 5);
     tprintf("Your malloc/free takes %lu cycles to allocate and deallocate on average", your_average_time);
 
-    tprintf("You passed if you're at least a quarter as fast as the system malloc/free!");
-    treturn(your_average_time <= (average_reference_malloc_time * 4));
+    tprintf("There is no malloc/dealloc perf requirement in Lab 3, so you will always pass this");
+    treturn(true);
 }
 
 static void insanity2(void*) {
@@ -1384,6 +1699,48 @@ static void i_prefer_latches(void*) {//Corresponds to Lab 1 evaluation outline #
     passed = passed && (r11 == 0xBBBBBBBB);
 
     treturn(passed);
+}
+
+static void stack_ownership(void*) {
+    task_t another_task = beyblade_let_it_rip();
+    if (another_task == TID_NULL) {
+        tprintf("Failed to create another task!");
+        treturn(false);
+    }
+
+    TCB another_task_info;
+    memset(&another_task_info, 0, sizeof(TCB));
+    if (osTaskInfo(another_task, &another_task_info) != RTX_OK) {
+        tprintf("Failed to get information about the other task!");
+        topple_spinners();
+        treturn(false);
+    }
+
+    if (another_task_info.stack_high == NULL) {
+        tprintf("The other task's stack_high was not populated!");
+        topple_spinners();
+        treturn(false);
+    }
+
+    if (another_task_info.stack_size == 0) {
+        tprintf("The other task's stack_size was not populated!");
+        topple_spinners();
+        treturn(false);
+    }
+
+    void* start_of_heap_allocation = (void*)(another_task_info.stack_high - ((uint32_t)another_task_info.stack_size));
+
+    //This should fail since, according to the spec, tasks own their own stacks
+    if (k_mem_dealloc(start_of_heap_allocation) != RTX_ERR) {
+        tprintf("k_mem_dealloc() should not allow deallocating another task's stack!");
+        tprintf("Things are probably going to crash now, sorry...");
+        topple_spinners();
+        treturn(false);
+    }
+
+    tprintf("Very noice :)");
+    topple_spinners();
+    treturn(true);
 }
 
 static void tid_limits(void*) {//Corresponds to Lab 1 evaluation outline #7 and 8

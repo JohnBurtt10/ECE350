@@ -153,6 +153,10 @@ int SVC_Handler_Main( unsigned int *svc_args )
 	case OS_SLEEP:
 		int timeInMs = (int) svc_args[0];
 
+		if (kernelVariables.kernelStarted == 0) {
+			break;
+		}
+
 		// Set current running task to status of sleep, and set its remainingTIme to timeInMs
 		TCB* currentTCB = &kernelVariables.tcbList[kernelVariables.currentRunningTID];
 		currentTCB->state = SLEEPING;
