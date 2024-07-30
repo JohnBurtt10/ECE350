@@ -21,6 +21,7 @@ int osCreateTask(TCB* task) {
 
 int osCreateDeadlineTask(int deadline, TCB* task) {
 	int output;
+	if (task == NULL || task->ptask == NULL || task->stack_size < STACK_SIZE) return RTX_ERR;
 	TRIGGER_SVC(OS_CREATE_DEADLINE_TASK);
 	__asm("MOV %0, R0": "=r"(output));
 	return output;
