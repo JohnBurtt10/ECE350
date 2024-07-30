@@ -141,6 +141,14 @@ int SVC_Handler_Main( unsigned int *svc_args )
 		}
 
 		kernelVariables.tcbList[TID].deadline_ms = deadline;
+		kernelVariables.tcbList[TID].remainingTime = deadline;
+
+		// If the caller of the function has a longer deadline, then we should preempt it with the newly created task.
+		if (kernelVariables.tcbList[kernelVariables.currentRunningTID].remainingTime > kernelVariables.tcbList[TID].remainingTime
+				&& kernelVariables.kernelStarted) {
+			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+			__asm("isb");
+		}
 
 		return RTX_OK;
 
